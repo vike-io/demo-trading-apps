@@ -60,11 +60,17 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         # /api/<slug>/<rest>?query
         if self.path.startswith("/api/"):
-            self.proxy()
+            self.proxy(method="GET")
             return
         super().do_GET()
 
-    def proxy(self) -> None:
+    def do_POST(self) -> None:  # noqa: N802
+        if self.path.startswith("/api/"):
+            self.proxy(method="POST")
+            return
+        self.send_error(405)
+
+    def proxy(self, method: str = "GET") -> None:
         # Strip leading "/api/" then peel slug.
         rest = self.path[len("/api/"):]
         slug, sep, tail = rest.partition("/")
@@ -99,8 +105,18 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             upstream = f"{upstream_base}/{quote(tail, safe='/')}"
 
-        req = urllib.request.Request(upstream)
+        body: bytes | None = None
+        if method == "POST":
+            length = int(self.headers.get("Content-Length", "0") or 0)
+            body = self.rfile.read(length) if length else b""
+
+        req = urllib.request.Request(upstream, data=body, method=method)
         req.add_header("accept", "application/json")
+        if body is not None:
+            req.add_header(
+                "content-type",
+                self.headers.get("Content-Type", "application/json"),
+            )
         key_env = route.get("api_key_env")
         key_hdr = route.get("api_key_header")
         if key_env and key_hdr and ENV.get(key_env):

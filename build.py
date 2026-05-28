@@ -87,6 +87,15 @@ def build_case(manifest: dict) -> None:
         (out_dir / f"{page}.html").write_text(html, encoding="utf-8")
         print(f"  wrote .dist/{slug}/{page}.html")
 
+    # Copy any *.json sitting next to the manifest into the case's
+    # dist folder (except the manifest itself). Useful for snapshot
+    # data the frontend fetches at runtime.
+    for extra in case_dir.glob("*.json"):
+        if extra.name == "manifest.json":
+            continue
+        shutil.copy2(extra, out_dir / extra.name)
+        print(f"  copied .dist/{slug}/{extra.name}")
+
 
 def build_landing(cases: list[dict]) -> None:
     tpl = LANDING / "templates" / "index.html"

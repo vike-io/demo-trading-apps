@@ -62,9 +62,26 @@
     }
     #error[hidden] { display: none; }
 
+    section.impl {
+      max-width: 1200px; margin: 28px auto 0; padding: 0 24px 4px;
+    }
+    section.impl .impl-head { margin-bottom: 14px; }
+    section.impl .impl-head h2 {
+      margin: 0 0 4px; font-size: 18px; font-weight: 700; color: var(--text);
+    }
+    section.impl .impl-head p {
+      margin: 0; color: var(--mute); font-size: 13px; max-width: 800px;
+    }
+    section.impl code {
+      background: var(--bg); color: var(--text);
+      padding: 1px 6px; border-radius: 4px; font-size: 11px;
+      border: 1px solid var(--border);
+    }
+    section.impl + section.impl { margin-top: 48px; }
+
     .legend {
-      max-width: 1200px; margin: 24px auto 16px; padding: 0 24px;
-      display: flex; flex-wrap: wrap; gap: 24px;
+      margin: 0 0 12px; padding: 0;
+      display: flex; flex-wrap: wrap; gap: 18px;
       font-size: 12px; color: var(--mute);
     }
     .legend .item { display: flex; align-items: center; gap: 8px; }
@@ -73,7 +90,7 @@
     .legend .dot.bybit { background: var(--bybit); }
     .legend strong { color: var(--text); font-weight: 600; }
 
-    main { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
+    main { padding-bottom: 60px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     thead th {
       position: sticky; top: 53px;
@@ -98,6 +115,13 @@
     td.spread .pct { font-size: 11px; color: var(--mute); margin-left: 4px; }
     td.bin { color: var(--binance); }
     td.byb { color: var(--bybit); }
+    .exchange {
+      display: inline-block;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; text-transform: lowercase; letter-spacing: 0.3px;
+    }
 
     .skeleton-row td { color: var(--mute); padding: 22px; text-align: center; }
     .empty-row td { color: var(--mute); padding: 22px; text-align: center; font-size: 12px; }
@@ -119,29 +143,62 @@
     <button id="retry" type="button">Retry</button>
   </div>
 
-  <div class="legend">
-    <div class="item"><span class="dot binance"></span>Binance USDT-perps (<code>/api/binance-tracker/perp/premiumIndex</code>)</div>
-    <div class="item"><span class="dot bybit"></span>Bybit USDT-perps (<code>/api/bybit-tracker/market/tickers?category=linear</code>)</div>
-    <div class="item">Spread = <strong>Bybit − Binance</strong>, sorted by absolute value</div>
-    <div class="item">Annualized = <strong>spread × 3 × 365</strong> (assumes 8h funding intervals)</div>
-  </div>
-
   <main>
-    <table>
-      <thead>
-        <tr>
-          <th class="rank">#</th>
-          <th>Pair</th>
-          <th class="num">Binance funding</th>
-          <th class="num">Bybit funding</th>
-          <th class="num">Spread</th>
-          <th class="num">Annualized</th>
-        </tr>
-      </thead>
-      <tbody id="rows">
-        <tr class="skeleton-row"><td colspan="6">Loading funding data…</td></tr>
-      </tbody>
-    </table>
+    <section class="impl">
+      <header class="impl-head">
+        <h2>1. DIY — Binance vs Bybit, joined client-side</h2>
+        <p>Two parallel fetches through this Worker's existing exchange proxies, intersected by symbol, sorted by absolute spread. Polls every 30 s. Two-venue coverage only.</p>
+      </header>
+      <div class="legend">
+        <div class="item"><span class="dot binance"></span>Binance (<code>/api/binance-tracker/perp/premiumIndex</code>)</div>
+        <div class="item"><span class="dot bybit"></span>Bybit (<code>/api/bybit-tracker/market/tickers?category=linear</code>)</div>
+        <div class="item">Spread = <strong>Bybit − Binance</strong></div>
+        <div class="item">Annualized = <strong>spread × 3 × 365</strong> (assumes 8h funding intervals)</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="rank">#</th>
+            <th>Pair</th>
+            <th class="num">Binance funding</th>
+            <th class="num">Bybit funding</th>
+            <th class="num">Spread</th>
+            <th class="num">Annualized</th>
+          </tr>
+        </thead>
+        <tbody id="rows-diy">
+          <tr class="skeleton-row"><td colspan="6">Loading DIY…</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="impl">
+      <header class="impl-head">
+        <h2>2. Vike API — pre-ranked across 6+ venues</h2>
+        <p>One JSON-RPC call to <code>vike.io/mcp</code>'s <code>perp_funding</code> tool. Vike has already joined every major perp venue (bybit, lighter, aster, coinbase, hyperliquid, bingx, kucoin, …), normalized to daily %, and surfaced the top long/short legs by spread.</p>
+      </header>
+      <div class="legend">
+        <div class="item">Per row: optimal <strong>long_exchange</strong> + <strong>short_exchange</strong></div>
+        <div class="item">Filtered to spreads ≥ 0.3 % daily</div>
+        <div class="item">All metrics already normalized to daily %</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="rank">#</th>
+            <th>Symbol</th>
+            <th>Long here</th>
+            <th class="num">Long daily</th>
+            <th>Short here</th>
+            <th class="num">Short daily</th>
+            <th class="num">Spread daily</th>
+          </tr>
+        </thead>
+        <tbody id="rows-vike">
+          <tr class="skeleton-row"><td colspan="7">Loading Vike…</td></tr>
+        </tbody>
+      </table>
+    </section>
   </main>
 
   <script>
@@ -149,13 +206,14 @@
       brandName: "{{brand_name}}",
       topNPairs: {{top_n_pairs}}
     };
-    // This case reuses the existing exchange proxies — no new upstream
-    // is declared in its manifest. URLs are root-relative so they hit
-    // the same Worker.
+    // DIY column reuses the existing exchange proxies — same Worker, same origin.
     const BINANCE_FUND = "/api/binance-tracker/perp/premiumIndex";
     const BYBIT_PERP_TICKERS = "/api/bybit-tracker/market/tickers?category=linear";
+    // Vike column: POST a JSON-RPC body to this case's own /vike/mcp route.
+    // The Worker forwards to https://vike.io/mcp with the X-API-KEY header attached.
+    const VIKE_MCP = "/api/perp-funding-spread/vike/mcp";
 
-    const state = { joined: [], pollTimer: null };
+    const state = { joinedDiy: [], joinedVike: [], pollTimer: null };
     let lastAction = null;
     const $ = s => document.querySelector(s);
 
@@ -215,38 +273,65 @@
       return map;
     }
 
+    async function loadDiy() {
+      const [bin, byb] = await Promise.all([fetchBinance(), fetchBybit()]);
+      const symbols = new Set([...bin.keys(), ...byb.keys()]);
+      const joined = [];
+      for (const sym of symbols) {
+        const b = bin.get(sym);
+        const y = byb.get(sym);
+        if (b == null || y == null) continue;  // need both sides for a spread
+        joined.push({ symbol: sym, binance: b, bybit: y, spread: y - b });
+      }
+      joined.sort((a, b) => Math.abs(b.spread) - Math.abs(a.spread));
+      state.joinedDiy = joined.slice(0, CONFIG.topNPairs);
+      renderDiy();
+    }
+
+    async function loadVike() {
+      // JSON-RPC 2.0: tools/call → perp_funding (no args → top spreads cross-venue)
+      const res = await fetch(VIKE_MCP, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: { name: "perp_funding", arguments: {} }
+        })
+      });
+      if (!res.ok) throw new Error(`Vike proxy ${res.status}`);
+      const env = await res.json();
+      if (env.error) throw new Error(`Vike JSON-RPC: ${env.error.message || env.error.code}`);
+      const text = env.result?.content?.[0]?.text;
+      if (!text) throw new Error("Vike returned no content");
+      const rows = JSON.parse(text);
+      state.joinedVike = rows.slice(0, CONFIG.topNPairs);
+      renderVike();
+    }
+
     async function loadAll() {
       $("#refresh").disabled = true;
       try {
-        const [bin, byb] = await Promise.all([fetchBinance(), fetchBybit()]);
-        const symbols = new Set([...bin.keys(), ...byb.keys()]);
-        const joined = [];
-        for (const sym of symbols) {
-          const b = bin.get(sym);
-          const y = byb.get(sym);
-          if (b == null || y == null) continue;  // need both sides for a spread
-          joined.push({ symbol: sym, binance: b, bybit: y, spread: y - b });
-        }
-        joined.sort((a, b) => Math.abs(b.spread) - Math.abs(a.spread));
-        state.joined = joined.slice(0, CONFIG.topNPairs);
-        renderRows();
+        // Run both in parallel; if Vike fails, DIY still renders.
+        const results = await Promise.allSettled([loadDiy(), loadVike()]);
+        for (const r of results) if (r.status === "rejected") console.warn(r.reason);
         $("#last-update").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour12: false });
       } finally {
         $("#refresh").disabled = false;
       }
     }
 
-    function renderRows() {
-      const tbody = $("#rows");
-      if (!state.joined.length) {
+    function renderDiy() {
+      const tbody = $("#rows-diy");
+      if (!state.joinedDiy.length) {
         tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No overlapping symbols.</td></tr>`;
         return;
       }
-      tbody.innerHTML = state.joined.map((r, i) => {
+      tbody.innerHTML = state.joinedDiy.map((r, i) => {
         const base = r.symbol.replace("USDT", "");
-        const big = Math.abs(r.spread) >= 0.001 ? " big" : "";  // > 0.1% = highlight
+        const big = Math.abs(r.spread) >= 0.001 ? " big" : "";
         const spreadCls = r.spread >= 0 ? "up" : "down";
-        const binCls = r.binance >= 0 ? "" : "";
         return `<tr>
           <td class="rank">${i + 1}</td>
           <td class="pair"><span class="base">${base}</span><span class="quote">/USDT-PERP</span></td>
@@ -254,6 +339,33 @@
           <td class="num byb">${fmtFunding(r.bybit)}</td>
           <td class="num spread${big} ${spreadCls}">${fmtSpread(r.spread)}</td>
           <td class="num ${spreadCls}">${fmtAnnualized(r.spread)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function fmtVikePct(n) {
+      if (n == null) return "—";
+      return (n >= 0 ? "+" : "") + Number(n).toFixed(3) + "%";
+    }
+    function renderVike() {
+      const tbody = $("#rows-vike");
+      if (!state.joinedVike.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="7">No spreads above threshold.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = state.joinedVike.map((r, i) => {
+        const big = Math.abs(r.spread_daily_pct) >= 1 ? " big" : "";
+        const spreadCls = r.spread_daily_pct >= 0 ? "up" : "down";
+        const longCls = r.long_daily_pct >= 0 ? "up" : "down";
+        const shortCls = r.short_daily_pct >= 0 ? "up" : "down";
+        return `<tr>
+          <td class="rank">${i + 1}</td>
+          <td class="pair"><span class="base">${r.symbol}</span></td>
+          <td><span class="exchange">${r.long_exchange}</span></td>
+          <td class="num ${longCls}">${fmtVikePct(r.long_daily_pct)}</td>
+          <td><span class="exchange">${r.short_exchange}</span></td>
+          <td class="num ${shortCls}">${fmtVikePct(r.short_daily_pct)}</td>
+          <td class="num spread${big} ${spreadCls}">${fmtVikePct(r.spread_daily_pct)}</td>
         </tr>`;
       }).join("");
     }

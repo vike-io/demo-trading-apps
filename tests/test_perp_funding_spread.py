@@ -15,7 +15,7 @@ def test_discover_includes_perp_funding_spread():
     assert "perp-funding-spread" in slugs
 
 
-def test_build_produces_index():
+def test_build_produces_side_by_side_implementations():
     build.DIST.mkdir(exist_ok=True)
     case = next(c for c in build.discover_cases() if c["slug"] == "perp-funding-spread")
     build.build_case(case)
@@ -24,24 +24,33 @@ def test_build_produces_index():
     assert out.exists()
     html = out.read_text(encoding="utf-8")
 
-    # Brand + tagline substituted.
+    # Brand substituted.
     assert "Perp Funding Spread" in html
 
-    # Reuses the existing exchange proxies — relative URLs, no new upstream.
+    # DIY column reuses the existing exchange proxies — relative URLs, no new key.
     assert "/api/binance-tracker/perp/premiumIndex" in html
     assert "/api/bybit-tracker/market/tickers?category=linear" in html
 
-    # The spread + annualization math lives in the rendered file.
-    assert "fmtSpread" in html and "fmtAnnualized" in html
+    # Vike column hits this case's own /vike/mcp route — Worker adds the key.
+    assert "/api/perp-funding-spread/vike/mcp" in html
+    # JS object literal — key is unquoted, value is the string "2.0".
+    assert 'jsonrpc: "2.0"' in html
+    assert 'tools/call' in html
+    assert '"perp_funding"' in html
+
+    # Both tbody hooks present (DIY + Vike).
+    assert 'id="rows-diy"' in html and 'id="rows-vike"' in html
+    assert "renderDiy" in html and "renderVike" in html
     assert "Math.abs(b.spread) - Math.abs(a.spread)" in html
 
 
-def test_routing_manifest_has_no_upstream_for_this_case():
-    """The case doesn't declare its own upstream — it consumes existing
-    exchange proxies. The routing manifest should reflect that."""
+def test_routing_manifest_has_vike_upstream_with_key_header():
     cases = build.discover_cases()
     build.write_routing_manifest(cases)
     routes = json.loads((build.DIST / "manifest.json").read_text())["routes"]
     spread = next(r for r in routes if r["slug"] == "perp-funding-spread")
-    assert "upstream_base" not in spread
-    assert "upstreams" not in spread
+
+    assert "upstreams" in spread
+    assert spread["upstreams"]["vike"]["base"] == "https://vike.io"
+    assert spread["api_key_env"] == "VIKE_API_KEY"
+    assert spread["api_key_header"] == "X-API-KEY"

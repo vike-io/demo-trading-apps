@@ -1,11 +1,16 @@
 {
   "slug": "perp-funding-spread",
   "name": "Perp Funding Spread",
-  "tagline": "Cross-exchange funding rate dispersion. Compare Binance vs Bybit USDT-perps side by side, sorted by absolute spread.",
+  "tagline": "Cross-exchange funding rate dispersion: roll-your-own (Binance + Bybit) vs Vike API (6+ venues, pre-ranked).",
   "tag": "Cross-exchange",
   "pages": ["index"],
   "config": {
     "brand_name": "Perp Funding Spread",
     "top_n_pairs": 40
-  }
+  },
+  "upstreams": {
+    "vike": { "base": "https://vike.io" }
+  },
+  "api_key_env": "VIKE_API_KEY",
+  "api_key_header": "X-API-KEY"
 }

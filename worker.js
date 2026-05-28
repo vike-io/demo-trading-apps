@@ -25,14 +25,14 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/api/")) {
-      return proxy(url, env);
+      return proxy(request, url, env);
     }
 
     return env.ASSETS.fetch(request);
   }
 };
 
-async function proxy(url, env) {
+async function proxy(request, url, env) {
   const after = url.pathname.slice("/api/".length);
   const slash = after.indexOf("/");
   const slug = slash === -1 ? after : after.slice(0, slash);
@@ -69,18 +69,29 @@ async function proxy(url, env) {
 
   const upstream = `${base}/${upstreamPath}${url.search}`;
   const headers = { accept: "application/json" };
+  // Forward content-type for non-GET methods that carry a body.
+  const incomingCT = request.headers.get("content-type");
+  if (incomingCT) headers["content-type"] = incomingCT;
   if (route.api_key_env && route.api_key_header && env[route.api_key_env]) {
     headers[route.api_key_header] = env[route.api_key_env];
   }
 
+  const init = { method: request.method, headers };
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    init.body = request.body;
+  }
+  // Only cache idempotent GETs at the edge.
+  if (request.method === "GET") init.cf = { cacheTtl: 30 };
+
   try {
-    const upRes = await fetch(upstream, { headers, cf: { cacheTtl: 30 } });
+    const upRes = await fetch(upstream, init);
+    const respHeaders = {
+      "content-type": upRes.headers.get("content-type") ?? "application/json"
+    };
+    if (request.method === "GET") respHeaders["cache-control"] = "public, max-age=30";
     return new Response(upRes.body, {
       status: upRes.status,
-      headers: {
-        "content-type": upRes.headers.get("content-type") ?? "application/json",
-        "cache-control": "public, max-age=30"
-      }
+      headers: respHeaders
     });
   } catch (err) {
     return jsonError(502, "upstream unreachable", String(err));
