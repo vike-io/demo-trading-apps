@@ -3,76 +3,311 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{brand_name}} — Coming soon</title>
+  <title>{{brand_name}}</title>
   <style>
     :root {
-      --bg: #0d1421; --panel: #171b26; --border: #222531;
-      --text: #e9edf3; --mute: #8a93a6; --accent: #5c7cfa;
-    }
-    :root[data-theme="light"] {
-      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
-      --text: #0f172a; --mute: #64748b;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh; display: flex; flex-direction: column;
-    }
-    header.top {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 24px; background: var(--panel);
-      border-bottom: 1px solid var(--border);
-    }
-    header.top .brand-link {
-      display: flex; align-items: center; gap: 8px;
-      color: var(--text); text-decoration: none; font-weight: 700; font-size: 16px;
-    }
-    header.top .brand-link::before { content: "←"; color: var(--mute); }
-    main {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 40px 24px;
-    }
-    .card {
-      max-width: 560px; text-align: center;
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 14px; padding: 56px 40px;
-    }
-    .card .badge {
-      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
-      text-transform: uppercase; color: var(--accent);
-      background: rgba(92,124,250,0.12); padding: 4px 10px; border-radius: 5px;
-      margin-bottom: 16px;
-    }
-    .card h1 { margin: 0 0 8px; font-size: 28px; }
-    .card p { margin: 0 0 24px; color: var(--mute); font-size: 14px; }
-    .card .source {
-      display: inline-flex; align-items: center; gap: 8px;
-      color: var(--text); text-decoration: none;
-      padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
-      font-size: 13px;
-    }
-    .card .source:hover { border-color: var(--accent); color: var(--accent); }
-    .card .source svg { width: 14px; height: 14px; fill: currentColor; }
+  --bg: #0d1421;
+  --panel: #171b26;
+  --border: #222531;
+  --text: #e9edf3;
+  --mute: #8a93a6;
+  --green: #16c784;
+  --red: #ea3943;
+  --accent: #1652f0;
+}
+:root[data-theme="light"] {
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --mute: #64748b;
+}
+html, body { transition: background-color 0.18s, color 0.18s; }
+.controls button.theme-toggle {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+.controls button.theme-toggle:hover { border-color: var(--accent); }
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 700; font-size: 16px; letter-spacing: 0.3px; }
+.controls { display: flex; gap: 10px; }
+.controls select, .controls input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+}
+.controls input { min-width: 220px; }
+.controls select:focus, .controls input:focus { border-color: var(--accent); }
+
+#error {
+  margin: 12px 24px 0;
+  padding: 10px 14px;
+  background: rgba(234, 57, 67, 0.12);
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#error[hidden] { display: none; }
+#error button {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+main { padding: 16px 24px 40px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  position: sticky;
+  top: 53px;
+  background: var(--bg);
+  color: var(--mute);
+  text-align: left;
+  font-weight: 500;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+thead th.num, thead th.spark { text-align: right; }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+tbody tr:hover { background: var(--panel); }
+tbody td { padding: 12px; vertical-align: middle; }
+td.num, td.spark { text-align: right; font-variant-numeric: tabular-nums; }
+td.rank { color: var(--mute); width: 40px; }
+td.coin { display: flex; align-items: center; gap: 10px; }
+td.coin img { width: 22px; height: 22px; border-radius: 50%; }
+td.coin .sym { color: var(--mute); margin-left: 4px; text-transform: uppercase; }
+.up { color: var(--green); }
+.down { color: var(--red); }
+
+td.spark svg { display: inline-block; vertical-align: middle; }
   </style>
-  <script>
-    document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark';
+<script>
+    // Apply theme before paint to avoid flash.
+    (function () {
+      document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark';
+    })();
   </script>
 </head>
 <body>
-  <header class="top">
-    <a class="brand-link" href="../">demo-trading-apps</a>
-  </header>
-  <main>
-    <div class="card">
-      <span class="badge">Coming soon</span>
-      <h1>{{brand_name}}</h1>
-      <p>This case isn't built yet. The folder is reserved and the manifest is wired up — once the implementation lands it'll appear here automatically on the next deploy.</p>
-      <a class="source" href="https://github.com/vike-io/demo-trading-apps/tree/main/{{slug}}" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2 .37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        Source folder
-      </a>
+  <header>
+    <div class="brand">{{brand_name}}</div>
+    <div class="controls">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+      <select id="currency"></select>
+      <input id="search" type="search" placeholder="Search bitcoin, eth, …">
     </div>
+  </header>
+
+  <div id="error" hidden>
+    <span id="error-message"></span>
+    <button id="retry" type="button">Retry</button>
+  </div>
+
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th class="coin">Coin</th>
+          <th class="num">Price</th>
+          <th class="num">24h %</th>
+          <th class="num">Market Cap</th>
+          <th class="num">Volume (24h)</th>
+          <th class="spark">Last 7d</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
   </main>
+
+  <script>
+    const CONFIG = {
+      defaultCurrency: "{{default_currency}}",
+      currencyList: {{currency_list_json}},
+      topN: {{top_n}}
+    };
+
+    const API = "{{api_base}}";
+    const state = {
+      currency: CONFIG.defaultCurrency,
+      coins: [],
+      filter: ""
+    };
+
+    const $ = (sel) => document.querySelector(sel);
+
+    function fmtPrice(n, currency) {
+      if (n == null) return "—";
+      const opts = n < 1
+        ? { maximumFractionDigits: 6 }
+        : { maximumFractionDigits: 2 };
+      return new Intl.NumberFormat("en-US", opts).format(n) + " " + currency.toUpperCase();
+    }
+
+    function fmtBig(n) {
+      if (n == null) return "—";
+      if (n >= 1e12) return (n / 1e12).toFixed(2) + "T";
+      if (n >= 1e9)  return (n / 1e9).toFixed(2)  + "B";
+      if (n >= 1e6)  return (n / 1e6).toFixed(2)  + "M";
+      return new Intl.NumberFormat("en-US").format(n);
+    }
+
+    function fmtPct(n) {
+      if (n == null) return "—";
+      return (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+    }
+
+    async function fetchCoins(currency) {
+      const url = `${API}/coins/markets?vs_currency=${currency}`
+        + `&order=market_cap_desc&per_page=${CONFIG.topN}&page=1`
+        + `&sparkline=true&price_change_percentage=24h`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+      state.coins = await res.json();
+      state.currency = currency;
+      renderRows();
+    }
+
+    function sparklineSVG(prices) {
+      if (!prices || prices.length < 2) return "";
+      const w = 80, h = 24, pad = 1;
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      const range = max - min || 1;
+      const stepX = (w - pad * 2) / (prices.length - 1);
+      const pts = prices.map((p, i) => {
+        const x = pad + i * stepX;
+        const y = h - pad - ((p - min) / range) * (h - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+      const color = prices[prices.length - 1] >= prices[0] ? "var(--green)" : "var(--red)";
+      return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">`
+        + `<polyline fill="none" stroke="${color}" stroke-width="1.4" points="${pts}"/></svg>`;
+    }
+
+    function renderRows() {
+      const tbody = $("#rows");
+      const f = state.filter.toLowerCase();
+      const rows = state.coins.filter(c =>
+        !f || c.name.toLowerCase().includes(f) || c.symbol.toLowerCase().includes(f)
+      );
+      tbody.innerHTML = rows.map(c => {
+        const pct = c.price_change_percentage_24h;
+        const pctCls = pct >= 0 ? "up" : "down";
+        return `
+          <tr data-coin-id="${c.id}">
+            <td class="rank">${c.market_cap_rank ?? "—"}</td>
+            <td class="coin">
+              <img src="${c.image}" alt="" loading="lazy">
+              <span>${c.name}</span><span class="sym">${c.symbol}</span>
+            </td>
+            <td class="num">${fmtPrice(c.current_price, state.currency)}</td>
+            <td class="num ${pctCls}">${fmtPct(pct)}</td>
+            <td class="num">${fmtBig(c.market_cap)}</td>
+            <td class="num">${fmtBig(c.total_volume)}</td>
+            <td class="spark">${sparklineSVG(c.sparkline_in_7d && c.sparkline_in_7d.price)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function populateCurrencyDropdown() {
+      const sel = $("#currency");
+      sel.innerHTML = CONFIG.currencyList
+        .map(c => `<option value="${c}"${c === state.currency ? " selected" : ""}>${c.toUpperCase()}</option>`)
+        .join("");
+    }
+
+    let lastAction = null;  // () => Promise<void>
+
+    function showError(msg) {
+      $("#error-message").textContent = msg;
+      $("#error").hidden = false;
+    }
+
+    function hideError() {
+      $("#error").hidden = true;
+    }
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+    }
+
+    function bindEvents() {
+      $("#search").addEventListener("input", (e) => {
+        state.filter = e.target.value;
+        renderRows();
+      });
+      $("#currency").addEventListener("change", (e) => {
+        runAction(() => fetchCoins(e.target.value));
+      });
+      $("#rows").addEventListener("click", (e) => {
+        const tr = e.target.closest("tr[data-coin-id]");
+        if (tr) location.href = `./coin.html?id=${encodeURIComponent(tr.dataset.coinId)}`;
+      });
+      $("#retry").addEventListener("click", () => {
+        if (lastAction) runAction(lastAction);
+      });
+      $("#theme-toggle").addEventListener("click", () => {
+        applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+      });
+      applyTheme(document.documentElement.dataset.theme);
+    }
+
+    async function runAction(fn) {
+      lastAction = fn;
+      hideError();
+      try {
+        await fn();
+      } catch (err) {
+        console.error(err);
+        const msg = String(err).includes("429")
+          ? "CoinGecko rate-limited. Try again in about a minute."
+          : "Could not reach CoinGecko. Check your connection.";
+        showError(msg);
+      }
+    }
+
+    populateCurrencyDropdown();
+    bindEvents();
+    runAction(() => fetchCoins(state.currency));
+  </script>
 </body>
 </html>

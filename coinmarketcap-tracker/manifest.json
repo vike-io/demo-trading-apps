@@ -1,11 +1,16 @@
 {
   "slug": "coinmarketcap-tracker",
   "name": "CoinMarketCap Tracker",
-  "tagline": "Market cap leaderboard with prices, dominance, charts. Planned.",
-  "tag": "Coming soon",
-  "pages": ["index"],
+  "tagline": "CMC-style top-100 leaderboard with sparklines, currency switcher, and detailed per-coin pages. Data: CoinGecko v3.",
+  "tag": "Market data",
+  "pages": ["index", "coin"],
   "config": {
-    "brand_name": "CoinMarketCap Tracker"
+    "brand_name": "CoinMarketCap Tracker",
+    "default_currency": "usd",
+    "top_n": 100,
+    "currency_list": ["usd", "eur", "btc"]
   },
-  "upstream_base": "https://pro-api.coinmarketcap.com/v1"
+  "upstream_base": "https://api.coingecko.com/api/v3",
+  "api_key_env": "COINGECKO_API_KEY",
+  "api_key_header": "x-cg-demo-api-key"
 }
