@@ -57,6 +57,12 @@ Mirrors the CoinGecko Tracker shape but with CMC blue accent. Demonstrates the s
 
 A non-tracker case that plugs into the same umbrella. The browser version streams paginated klines via the `/api/binance-downloader/` Worker proxy and downloads a CSV via Blob. The same CSV schema ships as a Python CLI (`download.py`) that runs locally with stdlib only.
 
+### Perp Funding Spread — DIY vs Vike API, side by side
+
+[![Funding spread](./assets/screenshots/perp-funding-spread.png)](https://demo.vike.io/perp-funding-spread/)
+
+Two implementations of cross-exchange funding-rate dispersion stacked on one page. **Section 1 (DIY)** joins Binance perp `premiumIndex` with Bybit linear tickers via the existing exchange proxies — two-venue coverage, you write the math. **Section 2 (Vike API)** POSTs one JSON-RPC `tools/call` to `vike.io/mcp` through this Worker (which attaches the `X-API-KEY` from a secret) and gets the top spreads across 6+ venues pre-ranked, normalised to daily %, with optimal long/short legs already chosen. The contrast is the point.
+
 ## Cases
 
 | Case | Demo | Data source | Status |
@@ -67,6 +73,7 @@ A non-tracker case that plugs into the same umbrella. The browser version stream
 | [`bybit-tracker/`](./bybit-tracker/) | [demo.vike.io/bybit-tracker/](https://demo.vike.io/bybit-tracker/) | Bybit v5 (spot + linear) | ✅ live |
 | [`okx-tracker/`](./okx-tracker/) | [demo.vike.io/okx-tracker/](https://demo.vike.io/okx-tracker/) | OKX v5 (spot + swap) | ✅ live |
 | [`binance-downloader/`](./binance-downloader/) | [demo.vike.io/binance-downloader/](https://demo.vike.io/binance-downloader/) | Binance v3 | ✅ live |
+| [`perp-funding-spread/`](./perp-funding-spread/) | [demo.vike.io/perp-funding-spread/](https://demo.vike.io/perp-funding-spread/) | DIY: Binance + Bybit perps · Vike: `vike.io/mcp` (`X-API-KEY`) | ✅ live |
 
 ## Architecture
 
