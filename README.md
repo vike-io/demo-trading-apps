@@ -8,10 +8,10 @@ Each one is a working demo you can run locally with Python or deploy to a Cloudf
 | Slug | What it clones | Data source | Status |
 |---|---|---|---|
 | [`coingecko-tracker/`](./coingecko-tracker/) | CoinGecko-style market tracker | CoinGecko v3 | ✅ live |
-| `coinmarketcap/` | CoinMarketCap-style market tracker | TBD | planned |
-| `binance/` | Binance spot UI | Binance public API | planned |
-| `bybit/` | Bybit perpetuals UI | Bybit v5 | planned |
-| `okx/` | OKX exchange UI | OKX v5 | planned |
+| [`binance-tracker/`](./binance-tracker/) | Binance spot view | Binance public API | 🚧 next |
+| `coinmarketcap-tracker/` | CoinMarketCap-style market tracker | TBD | planned |
+| `bybit-tracker/` | Bybit perpetuals UI | Bybit v5 | planned |
+| `okx-tracker/` | OKX exchange UI | OKX v5 | planned |
 
 ## Shared shape
 

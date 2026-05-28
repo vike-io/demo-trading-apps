@@ -1,0 +1,16 @@
+{
+  "slug": "coingecko-tracker",
+  "name": "CoinGecko Tracker",
+  "tagline": "Top 100 crypto by market cap. Search, sparklines, full per-coin detail page with chart + stats.",
+  "tag": "Market data",
+  "pages": ["index", "coin"],
+  "config": {
+    "brand_name": "CoinGecko Tracker",
+    "default_currency": "usd",
+    "top_n": 100,
+    "currency_list": ["usd", "eur", "btc"]
+  },
+  "upstream_base": "https://api.coingecko.com/api/v3",
+  "api_key_env": "COINGECKO_API_KEY",
+  "api_key_header": "x-cg-demo-api-key"
+}

@@ -1,0 +1,17 @@
+{
+  "slug": "binance-tracker",
+  "name": "Binance Tracker",
+  "tagline": "Live spot view: candles, order book, recent trades. Top USDT pairs by 24h volume.",
+  "tag": "Spot trading",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Binance Tracker",
+    "default_symbol": "BTCUSDT",
+    "intervals": ["1m", "5m", "15m", "1h", "4h", "1d"],
+    "default_interval": "1h",
+    "depth_limit": 20,
+    "trades_limit": 20,
+    "top_n_pairs": 30
+  },
+  "upstream_base": "https://api.binance.com/api/v3"
+}
