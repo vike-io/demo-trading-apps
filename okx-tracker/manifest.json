@@ -1,11 +1,18 @@
 {
   "slug": "okx-tracker",
   "name": "OKX Tracker",
-  "tagline": "Spot + perpetuals + options in one tabbed view. Planned.",
-  "tag": "Coming soon",
+  "tagline": "OKX spot view: candles, order book, trades, top USDT pairs. Foundation for swap + options.",
+  "tag": "Spot trading",
   "pages": ["index"],
   "config": {
-    "brand_name": "OKX Tracker"
+    "brand_name": "OKX Tracker",
+    "inst_type": "SPOT",
+    "default_symbol": "BTC-USDT",
+    "intervals": ["1m", "5m", "15m", "1H", "4H", "1D"],
+    "default_interval": "1H",
+    "depth_limit": 20,
+    "trades_limit": 20,
+    "top_n_pairs": 30
   },
   "upstream_base": "https://www.okx.com/api/v5"
 }

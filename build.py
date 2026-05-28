@@ -22,7 +22,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent
-DIST = ROOT / "dist"
+DIST = ROOT / ".dist"
 LANDING = ROOT / "landing"
 
 
@@ -33,12 +33,16 @@ def render_template(path: Path, **vars: str) -> str:
     return text
 
 
+RESERVED_DIRS = {"landing", "dist", "tests", "node_modules"}
+
+
 def discover_cases() -> list[dict]:
     """Find every immediate-child folder that has a manifest.json."""
     cases = []
     for manifest_path in sorted(ROOT.glob("*/manifest.json")):
         case_dir = manifest_path.parent
-        if case_dir.name in {"landing", "dist", "tests"}:
+        # Skip reserved directory names and any dot-prefixed dirs (.dist, .github, ...)
+        if case_dir.name in RESERVED_DIRS or case_dir.name.startswith("."):
             continue
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["_dir"] = case_dir
@@ -78,7 +82,7 @@ def build_case(manifest: dict) -> None:
             raise FileNotFoundError(f"Missing template: {tpl}")
         html = render_template(tpl, **vars)
         (out_dir / f"{page}.html").write_text(html, encoding="utf-8")
-        print(f"  wrote dist/{slug}/{page}.html")
+        print(f"  wrote .dist/{slug}/{page}.html")
 
 
 def build_landing(cases: list[dict]) -> None:
@@ -103,7 +107,7 @@ def build_landing(cases: list[dict]) -> None:
     html = render_template(tpl, cards_json=json.dumps(cards))
     DIST.mkdir(exist_ok=True)
     (DIST / "index.html").write_text(html, encoding="utf-8")
-    print("  wrote dist/index.html")
+    print("  wrote .dist/index.html")
 
 
 def write_routing_manifest(cases: list[dict]) -> None:
@@ -121,7 +125,7 @@ def write_routing_manifest(cases: list[dict]) -> None:
     (DIST / "manifest.json").write_text(
         json.dumps({"routes": routes}, indent=2), encoding="utf-8"
     )
-    print("  wrote dist/manifest.json")
+    print("  wrote .dist/manifest.json")
 
 
 def main() -> None:

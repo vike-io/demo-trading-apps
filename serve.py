@@ -22,7 +22,7 @@ from urllib.parse import quote
 
 
 ROOT = Path(__file__).resolve().parent
-DIST = ROOT / "dist"
+DIST = ROOT / ".dist"
 ENV_FILE = ROOT / ".env"
 PORT = 8000
 

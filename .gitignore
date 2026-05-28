@@ -1,6 +1,7 @@
 # Patterns apply everywhere — root and nested cases (foo/, bar/, ...)
 
-# Build output
+# Build output (dot-prefixed so it stays hidden in editor file trees)
+**/.dist/
 **/dist/
 
 # Python
