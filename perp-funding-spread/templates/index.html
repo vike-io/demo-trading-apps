@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="{{tagline}}">
+  <meta property="og:title" content="{{name}}">
+  <meta property="og:description" content="{{tagline}}">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #0d1421; --panel: #171b26; --border: #222531;
+      --text: #e9edf3; --mute: #8a93a6;
+      --green: #16c784; --red: #ea3943;
+      --accent: #c084fc;
+      --binance: #f0b90b;
+      --bybit: #ffce3a;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+      --text: #0f172a; --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 24px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    header.top .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+    header.top .brand::before { content: "◆"; color: var(--accent); }
+    header.top .last-update { color: var(--mute); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .theme-toggle {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 10px; font-size: 14px; cursor: pointer;
+      margin-left: auto;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+    .refresh {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600;
+    }
+    .refresh:hover { border-color: var(--accent); }
+    .refresh:disabled { opacity: 0.6; cursor: progress; }
+
+    #error {
+      margin: 12px 24px 0; padding: 10px 14px;
+      background: rgba(234,57,67,0.12); border: 1px solid var(--red); border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #error[hidden] { display: none; }
+
+    .legend {
+      max-width: 1200px; margin: 24px auto 16px; padding: 0 24px;
+      display: flex; flex-wrap: wrap; gap: 24px;
+      font-size: 12px; color: var(--mute);
+    }
+    .legend .item { display: flex; align-items: center; gap: 8px; }
+    .legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .legend .dot.binance { background: var(--binance); }
+    .legend .dot.bybit { background: var(--bybit); }
+    .legend strong { color: var(--text); font-weight: 600; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 53px;
+      background: var(--bg); color: var(--mute);
+      text-align: left; font-weight: 500; font-size: 11px;
+      letter-spacing: 0.4px; text-transform: uppercase;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    thead th.num { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: var(--panel); }
+    tbody td { padding: 12px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+    td.num { text-align: right; }
+    td.rank { color: var(--mute); width: 50px; }
+    td.pair .base { color: var(--text); font-weight: 600; }
+    td.pair .quote { color: var(--mute); font-size: 11px; margin-left: 2px; }
+    td.up { color: var(--green); }
+    td.down { color: var(--red); }
+
+    td.spread { font-weight: 700; }
+    td.spread.big { font-size: 14px; }
+    td.spread .pct { font-size: 11px; color: var(--mute); margin-left: 4px; }
+    td.bin { color: var(--binance); }
+    td.byb { color: var(--bybit); }
+
+    .skeleton-row td { color: var(--mute); padding: 22px; text-align: center; }
+    .empty-row td { color: var(--mute); padding: 22px; text-align: center; font-size: 12px; }
+  </style>
+  <script>
+    (function () { document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark'; })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">{{brand_name}}</div>
+    <span class="last-update" id="last-update">—</span>
+    <button id="refresh" class="refresh" type="button">Refresh</button>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+  </header>
+
+  <div id="error" hidden>
+    <span id="error-message"></span>
+    <button id="retry" type="button">Retry</button>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="dot binance"></span>Binance USDT-perps (<code>/api/binance-tracker/perp/premiumIndex</code>)</div>
+    <div class="item"><span class="dot bybit"></span>Bybit USDT-perps (<code>/api/bybit-tracker/market/tickers?category=linear</code>)</div>
+    <div class="item">Spread = <strong>Bybit − Binance</strong>, sorted by absolute value</div>
+    <div class="item">Annualized = <strong>spread × 3 × 365</strong> (assumes 8h funding intervals)</div>
+  </div>
+
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th>Pair</th>
+          <th class="num">Binance funding</th>
+          <th class="num">Bybit funding</th>
+          <th class="num">Spread</th>
+          <th class="num">Annualized</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr class="skeleton-row"><td colspan="6">Loading funding data…</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const CONFIG = {
+      brandName: "{{brand_name}}",
+      topNPairs: {{top_n_pairs}}
+    };
+    // This case reuses the existing exchange proxies — no new upstream
+    // is declared in its manifest. URLs are root-relative so they hit
+    // the same Worker.
+    const BINANCE_FUND = "/api/binance-tracker/perp/premiumIndex";
+    const BYBIT_PERP_TICKERS = "/api/bybit-tracker/market/tickers?category=linear";
+
+    const state = { joined: [], pollTimer: null };
+    let lastAction = null;
+    const $ = s => document.querySelector(s);
+
+    function fmtFunding(n) {
+      if (n == null || n === "" || Number.isNaN(Number(n))) return "—";
+      const pct = Number(n) * 100;
+      return (pct >= 0 ? "+" : "") + pct.toFixed(4) + "%";
+    }
+    function fmtSpread(n) {
+      if (n == null) return "—";
+      const pct = n * 100;
+      return (pct >= 0 ? "+" : "") + pct.toFixed(4) + "%";
+    }
+    function fmtAnnualized(n) {
+      if (n == null) return "—";
+      const annPct = n * 3 * 365 * 100;
+      return (annPct >= 0 ? "+" : "") + annPct.toFixed(2) + "%";
+    }
+
+    function showError(msg) { $("#error-message").textContent = msg; $("#error").hidden = false; }
+    function hideError() { $("#error").hidden = true; }
+    async function runAction(fn) {
+      lastAction = fn;
+      hideError();
+      try { await fn(); }
+      catch (err) {
+        console.error(err);
+        showError("Could not load funding data — " + String(err).slice(0, 120));
+      }
+    }
+
+    async function fetchBinance() {
+      const res = await fetch(BINANCE_FUND);
+      if (!res.ok) throw new Error(`Binance proxy ${res.status}`);
+      const arr = await res.json();
+      // premiumIndex returns array of { symbol, lastFundingRate, ... }
+      const map = new Map();
+      for (const r of arr) {
+        if (r.symbol && r.symbol.endsWith("USDT") && r.lastFundingRate !== "" && r.lastFundingRate != null) {
+          map.set(r.symbol, Number(r.lastFundingRate));
+        }
+      }
+      return map;
+    }
+
+    async function fetchBybit() {
+      const res = await fetch(BYBIT_PERP_TICKERS);
+      if (!res.ok) throw new Error(`Bybit proxy ${res.status}`);
+      const body = await res.json();
+      if (body.retCode !== 0) throw new Error(`Bybit retCode ${body.retCode}`);
+      const map = new Map();
+      for (const r of body.result?.list || []) {
+        if (r.symbol && r.symbol.endsWith("USDT") && r.fundingRate !== "" && r.fundingRate != null) {
+          map.set(r.symbol, Number(r.fundingRate));
+        }
+      }
+      return map;
+    }
+
+    async function loadAll() {
+      $("#refresh").disabled = true;
+      try {
+        const [bin, byb] = await Promise.all([fetchBinance(), fetchBybit()]);
+        const symbols = new Set([...bin.keys(), ...byb.keys()]);
+        const joined = [];
+        for (const sym of symbols) {
+          const b = bin.get(sym);
+          const y = byb.get(sym);
+          if (b == null || y == null) continue;  // need both sides for a spread
+          joined.push({ symbol: sym, binance: b, bybit: y, spread: y - b });
+        }
+        joined.sort((a, b) => Math.abs(b.spread) - Math.abs(a.spread));
+        state.joined = joined.slice(0, CONFIG.topNPairs);
+        renderRows();
+        $("#last-update").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour12: false });
+      } finally {
+        $("#refresh").disabled = false;
+      }
+    }
+
+    function renderRows() {
+      const tbody = $("#rows");
+      if (!state.joined.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No overlapping symbols.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = state.joined.map((r, i) => {
+        const base = r.symbol.replace("USDT", "");
+        const big = Math.abs(r.spread) >= 0.001 ? " big" : "";  // > 0.1% = highlight
+        const spreadCls = r.spread >= 0 ? "up" : "down";
+        const binCls = r.binance >= 0 ? "" : "";
+        return `<tr>
+          <td class="rank">${i + 1}</td>
+          <td class="pair"><span class="base">${base}</span><span class="quote">/USDT-PERP</span></td>
+          <td class="num bin">${fmtFunding(r.binance)}</td>
+          <td class="num byb">${fmtFunding(r.bybit)}</td>
+          <td class="num spread${big} ${spreadCls}">${fmtSpread(r.spread)}</td>
+          <td class="num ${spreadCls}">${fmtAnnualized(r.spread)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+    }
+
+    function startPolling() {
+      stopPolling();
+      // Funding rate updates infrequently — refresh every 30s is plenty.
+      state.pollTimer = setInterval(() => runAction(loadAll).catch(() => {}), 30000);
+    }
+    function stopPolling() {
+      if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+    }
+
+    $("#theme-toggle").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    });
+    $("#refresh").addEventListener("click", () => runAction(loadAll));
+    $("#retry").addEventListener("click", () => { if (lastAction) runAction(lastAction); });
+    window.addEventListener("beforeunload", stopPolling);
+    applyTheme(document.documentElement.dataset.theme);
+
+    runAction(loadAll).then(startPolling);
+  </script>
+</body>
+</html>

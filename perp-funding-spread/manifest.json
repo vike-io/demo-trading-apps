@@ -1,0 +1,11 @@
+{
+  "slug": "perp-funding-spread",
+  "name": "Perp Funding Spread",
+  "tagline": "Cross-exchange funding rate dispersion. Compare Binance vs Bybit USDT-perps side by side, sorted by absolute spread.",
+  "tag": "Cross-exchange",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Perp Funding Spread",
+    "top_n_pairs": 40
+  }
+}
