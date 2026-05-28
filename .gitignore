@@ -17,7 +17,9 @@
 # Planning / scratch — local only
 **/docs/
 **/tmp/
-*.png
+**/tmp/*.png
+
+# Committed screenshots live under assets/ — see README.md.
 
 # Cloudflare Wrangler
 **/.wrangler/
