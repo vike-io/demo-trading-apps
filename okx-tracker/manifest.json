@@ -1,18 +1,18 @@
 {
   "slug": "okx-tracker",
   "name": "OKX Tracker",
-  "tagline": "OKX spot view: candles, order book, trades, top USDT pairs. Foundation for swap + options.",
-  "tag": "Spot trading",
-  "pages": ["index"],
+  "tagline": "Spot + USDT-Swap: markets list with funding rates, drill in for candles, order book, recent trades.",
+  "tag": "Spot + Swaps",
+  "pages": ["index", "trade"],
   "config": {
     "brand_name": "OKX Tracker",
-    "inst_type": "SPOT",
     "default_symbol": "BTC-USDT",
+    "default_mode": "spot",
     "intervals": ["1m", "5m", "15m", "1H", "4H", "1D"],
     "default_interval": "1H",
     "depth_limit": 20,
     "trades_limit": 20,
-    "top_n_pairs": 30
+    "top_n_pairs": 50
   },
   "upstream_base": "https://www.okx.com/api/v5"
 }

@@ -1,4 +1,4 @@
-"""Verify the umbrella build produces a working okx-tracker case."""
+"""Verify the umbrella build produces the new 2-page okx-tracker case."""
 
 import sys
 from pathlib import Path
@@ -14,31 +14,32 @@ def test_discover_includes_okx_tracker():
     assert "okx-tracker" in slugs
 
 
-def test_build_produces_okx_tracker_index():
+def test_build_produces_index_and_trade_for_okx_tracker():
     build.DIST.mkdir(exist_ok=True)
     case = next(c for c in build.discover_cases() if c["slug"] == "okx-tracker")
     build.build_case(case)
 
-    out = build.DIST / "okx-tracker" / "index.html"
-    assert out.exists()
-    html = out.read_text(encoding="utf-8")
+    out_dir = build.DIST / "okx-tracker"
+    index = (out_dir / "index.html").read_text(encoding="utf-8")
+    trade = (out_dir / "trade.html").read_text(encoding="utf-8")
 
-    assert 'const API = "/api/okx-tracker"' in html
-    assert "OKX Tracker" in html
-    # OKX uses hyphenated instIds (BTC-USDT not BTCUSDT).
-    assert '"BTC-USDT"' in html
+    # Index: markets list + Spot/USDT-Swap toggle.
+    assert "OKX Tracker" in index
+    assert 'data-mode="spot"' in index and 'data-mode="swap"' in index
+    assert "loadMarkets" in index
+    assert "./trade.html?symbol=" in index
+    assert "#00b6e8" in index  # OKX cyan
+    # Default symbol lives in trade.html (not index — index lists all pairs).
+    assert '"BTC-USDT"' in trade
 
-    # SPOT pill in header.
-    assert "SPOT" in html
-
-    # Standard chart + book + trades + markets skeleton.
-    assert 'id="chart"' in html
-    assert 'id="symbol"' in html
-    assert 'id="asks"' in html and 'id="bids"' in html
-    assert 'id="trades"' in html
-    assert 'id="pairs-tbody"' in html
-    assert "CandlestickSeries" in html
-    assert "HistogramSeries" in html
-
-    # OKX cyan accent.
-    assert "#00b6e8" in html
+    # Trade: chart + book + trades + mode pill + back link + perp-only stats.
+    assert 'id="chart"' in trade
+    assert 'id="symbol"' in trade
+    assert 'id="asks"' in trade and 'id="bids"' in trade
+    assert 'id="trades"' in trade
+    assert 'id="mode-pill"' in trade
+    assert "back-link" in trade
+    assert "perp-only" in trade
+    assert "INSTTYPE()" in trade
+    assert "loadFundingSwap" in trade
+    assert "CandlestickSeries" in trade and "HistogramSeries" in trade

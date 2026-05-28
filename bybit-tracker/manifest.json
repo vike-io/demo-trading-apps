@@ -1,18 +1,19 @@
 {
   "slug": "bybit-tracker",
   "name": "Bybit Tracker",
-  "tagline": "USDT-perpetual view: funding rate, mark price, open interest, candles, depth, trades.",
-  "tag": "Perpetuals",
-  "pages": ["index"],
+  "tagline": "Spot + USDT-Perpetuals: markets list with funding rates, drill in for candles, order book, recent trades.",
+  "tag": "Spot + Perps",
+  "pages": ["index", "trade"],
   "config": {
     "brand_name": "Bybit Tracker",
     "default_symbol": "BTCUSDT",
+    "default_mode": "perp",
     "intervals": ["1", "5", "15", "60", "240", "D"],
     "interval_labels": ["1m", "5m", "15m", "1H", "4H", "1D"],
     "default_interval": "60",
     "depth_limit": 20,
     "trades_limit": 20,
-    "top_n_pairs": 30
+    "top_n_pairs": 50
   },
   "upstream_base": "https://api.bybit.com/v5"
 }

@@ -1,4 +1,4 @@
-"""Verify the umbrella build produces a working bybit-tracker case."""
+"""Verify the umbrella build produces the new 2-page bybit-tracker case."""
 
 import sys
 from pathlib import Path
@@ -14,33 +14,30 @@ def test_discover_includes_bybit_tracker():
     assert "bybit-tracker" in slugs
 
 
-def test_build_produces_bybit_tracker_index():
+def test_build_produces_index_and_trade_for_bybit_tracker():
     build.DIST.mkdir(exist_ok=True)
     case = next(c for c in build.discover_cases() if c["slug"] == "bybit-tracker")
     build.build_case(case)
 
-    out = build.DIST / "bybit-tracker" / "index.html"
-    assert out.exists()
-    html = out.read_text(encoding="utf-8")
+    out_dir = build.DIST / "bybit-tracker"
+    index = (out_dir / "index.html").read_text(encoding="utf-8")
+    trade = (out_dir / "trade.html").read_text(encoding="utf-8")
 
-    assert 'const API = "/api/bybit-tracker"' in html
-    assert "Bybit Tracker" in html
-    assert '"BTCUSDT"' in html
+    # Index: markets list + Spot/USDT-Perp toggle.
+    assert "Bybit Tracker" in index
+    assert 'data-mode="spot"' in index and 'data-mode="perp"' in index
+    assert "loadMarkets" in index
+    assert "./trade.html?symbol=" in index
+    assert "Funding" in index
+    assert "#ffce3a" in index  # Bybit yellow
 
-    # Perp-specific UI hooks: funding rate, mark, OI prominently shown.
-    assert 'id="s-funding"' in html
-    assert 'id="s-mark"' in html
-    assert 'id="s-oi"' in html
-    assert "USDT-Perp" in html  # the perp pill in the header
-
-    # Standard chart + book + trades + markets skeleton.
-    assert 'id="chart"' in html
-    assert 'id="symbol"' in html
-    assert 'id="asks"' in html and 'id="bids"' in html
-    assert 'id="trades"' in html
-    assert 'id="pairs-tbody"' in html
-    assert "CandlestickSeries" in html
-    assert "HistogramSeries" in html
-
-    # Bybit yellow accent.
-    assert "#ffce3a" in html
+    # Trade: chart + book + trades + mode pill + back link + perp-only stats.
+    assert 'id="chart"' in trade
+    assert 'id="symbol"' in trade
+    assert 'id="asks"' in trade and 'id="bids"' in trade
+    assert 'id="trades"' in trade
+    assert 'id="mode-pill"' in trade
+    assert "back-link" in trade
+    assert "CandlestickSeries" in trade and "HistogramSeries" in trade
+    assert "perp-only" in trade
+    assert "CATEGORY()" in trade  # category param resolved dynamically per mode

@@ -9,7 +9,6 @@
   <meta property="og:title" content="{{name}}">
   <meta property="og:description" content="{{tagline}}">
   <meta property="og:type" content="website">
-  <script src="https://unpkg.com/lightweight-charts@5.0.8/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
       --bg: #0d1421; --panel: #171b26; --border: #222531;
@@ -24,116 +23,71 @@
     * { box-sizing: border-box; }
     html, body {
       margin: 0; background: var(--bg); color: var(--text);
-      font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       transition: background-color 0.18s, color 0.18s;
     }
     header.top {
-      position: sticky; top: 0; z-index: 20;
+      position: sticky; top: 0; z-index: 10;
       display: flex; align-items: center; gap: 14px;
-      padding: 12px 20px;
-      background: var(--panel); border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
     }
-    header.top .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+    header.top .brand {
+      font-weight: 700; font-size: 16px;
+      display: flex; align-items: center; gap: 6px;
+    }
     header.top .brand::before { content: "◆"; color: var(--accent); }
-    header.top .perp-pill {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
-      color: var(--accent); background: rgba(255,206,58,0.14);
-      padding: 3px 8px; border-radius: 4px;
+
+    .mode-tabs { display: inline-flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+    .mode-tabs button { background: transparent; color: var(--mute); border: none; padding: 5px 14px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; cursor: pointer; }
+    .mode-tabs button.active { background: var(--panel); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+    .controls { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .controls input, .controls button {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
     }
-    header.top select, header.top button {
-      background: var(--bg); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 7px 10px; font-size: 13px;
-    }
-    header.top select { min-width: 150px; font-weight: 600; }
-    header.top .price { font-size: 18px; font-weight: 700; margin-left: auto; font-variant-numeric: tabular-nums; }
-    header.top .delta { padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
-    header.top .delta.up { background: rgba(22,199,132,0.15); color: var(--green); }
-    header.top .delta.down { background: rgba(234,57,67,0.15); color: var(--red); }
-    .theme-toggle { cursor: pointer; }
-    .theme-toggle:hover { border-color: var(--accent); }
+    .controls input { min-width: 220px; }
+    .controls button { cursor: pointer; }
+    .controls button:hover { border-color: var(--accent); }
 
     #error {
-      margin: 10px 20px 0; padding: 10px 14px;
+      margin: 12px 24px 0; padding: 10px 14px;
       background: rgba(234,57,67,0.12); border: 1px solid var(--red); border-radius: 6px;
       display: flex; justify-content: space-between; align-items: center;
     }
     #error[hidden] { display: none; }
     #error button { background: var(--red); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
 
-    .perp-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      padding: 12px 20px;
-      background: var(--panel); border-bottom: 1px solid var(--border);
+    main { padding: 16px 24px 40px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 56px;
+      background: var(--bg);
+      color: var(--mute);
+      text-align: left;
+      font-weight: 500;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
     }
-    .perp-stats .stat { padding: 4px 14px; border-left: 1px solid var(--border); }
-    .perp-stats .stat:first-child { border-left: none; padding-left: 0; }
-    .perp-stats .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); display: block; margin-bottom: 3px; }
-    .perp-stats .value { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .perp-stats .value.up { color: var(--green); }
-    .perp-stats .value.down { color: var(--red); }
-    .perp-stats .countdown { font-size: 10px; color: var(--mute); margin-left: 6px; }
-
-    main {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 320px;
-      gap: 12px; padding: 12px 20px 24px;
-      align-items: start;
-    }
-    @media (max-width: 920px) { main { grid-template-columns: 1fr; } }
-    .left-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-
-    section.chart-panel, section.markets, .book, .trades {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
-    }
-    .timeframes { display: inline-flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px; margin-bottom: 8px; }
-    .timeframes button { background: transparent; color: var(--mute); border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .timeframes button.active { background: var(--panel); color: var(--text); }
-    .timeframes button:hover { color: var(--text); }
-    #chart { width: 100%; height: 380px; }
-
-    section.markets h3, .book h3, .trades h3 {
-      margin: 0 0 8px;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--mute);
-    }
-    table.pairs { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-    table.pairs th { text-align: left; font-weight: 500; font-size: 11px; color: var(--mute); padding: 6px 10px; border-bottom: 1px solid var(--border); }
-    table.pairs th.num { text-align: right; }
-    table.pairs tbody tr { cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; }
-    table.pairs tbody tr:last-child { border-bottom: none; }
-    table.pairs tbody tr:hover { background: rgba(255,206,58,0.06); }
-    table.pairs tbody tr.active { background: rgba(255,206,58,0.12); }
-    table.pairs td { padding: 7px 10px; font-size: 12px; }
-    table.pairs td.num { text-align: right; }
-    table.pairs td.sym .base { color: var(--text); font-weight: 600; }
-    table.pairs td.sym .quote { color: var(--mute); font-size: 10px; margin-left: 2px; }
-    table.pairs td.up { color: var(--green); }
-    table.pairs td.down { color: var(--red); }
-    table.pairs td.fundup { color: var(--red); }
-    table.pairs td.fundown { color: var(--green); }
-
-    aside.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-    .col-head { display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--mute); padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
-    .col-head .num { text-align: right; }
-    .book .rows, .trades .rows { font-variant-numeric: tabular-nums; font-size: 11px; }
-    .book .rows { max-height: 240px; overflow: hidden; position: relative; }
-    .book .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 1px 0; position: relative; line-height: 1.6; }
-    .book .row .num { text-align: right; }
-    .book .row .bar { position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.1; z-index: 0; }
-    .book .row > * { position: relative; z-index: 1; }
-    .book .ask .price { color: var(--red); }
-    .book .bid .price { color: var(--green); }
-    .book .ask .bar { background: var(--red); }
-    .book .bid .bar { background: var(--green); }
-    .book .spread { display: flex; justify-content: space-between; padding: 6px 0; margin: 6px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 11px; color: var(--mute); }
-    .book .spread strong { color: var(--text); font-variant-numeric: tabular-nums; }
-
-    .trades .rows { max-height: 280px; overflow: hidden; }
-    .trades .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 2px 0; line-height: 1.6; }
-    .trades .row .num { text-align: right; }
-    .trades .row.buy .price { color: var(--green); }
-    .trades .row.sell .price { color: var(--red); }
+    thead th.num { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
+    tbody tr:hover { background: var(--panel); }
+    tbody td { padding: 12px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+    td.num { text-align: right; }
+    td.rank { color: var(--mute); width: 50px; }
+    td.pair .base { color: var(--text); font-weight: 600; }
+    td.pair .quote { color: var(--mute); font-size: 11px; margin-left: 2px; text-transform: uppercase; }
+    td.up { color: var(--green); }
+    td.down { color: var(--red); }
+    td.fund-up { color: var(--red); }
+    td.fund-down { color: var(--green); }
+    .skeleton-row td { color: var(--mute); padding: 22px; text-align: center; }
   </style>
   <script>
     (function () { document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark'; })();
@@ -142,11 +96,14 @@
 <body>
   <header class="top">
     <div class="brand">{{brand_name}}</div>
-    <span class="perp-pill">USDT-Perp</span>
-    <select id="symbol"></select>
-    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
-    <span class="price" id="last-price">—</span>
-    <span class="delta" id="last-delta"></span>
+    <div class="mode-tabs" id="mode-tabs">
+      <button data-mode="spot">Spot</button>
+      <button data-mode="perp">USDT-Perp</button>
+    </div>
+    <div class="controls">
+      <button id="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+      <input id="search" type="search" placeholder="Search BTC, ETH, …">
+    </div>
   </header>
 
   <div id="error" hidden>
@@ -154,73 +111,38 @@
     <button id="retry" type="button">Retry</button>
   </div>
 
-  <div class="perp-stats">
-    <div class="stat"><span class="label">Funding rate</span><span class="value" id="s-funding">— <span class="countdown" id="s-funding-time"></span></span></div>
-    <div class="stat"><span class="label">Mark price</span><span class="value" id="s-mark">—</span></div>
-    <div class="stat"><span class="label">Index price</span><span class="value" id="s-index">—</span></div>
-    <div class="stat"><span class="label">Open interest</span><span class="value" id="s-oi">—</span></div>
-    <div class="stat"><span class="label">24h High</span><span class="value" id="s-high">—</span></div>
-    <div class="stat"><span class="label">24h Low</span><span class="value" id="s-low">—</span></div>
-    <div class="stat"><span class="label">24h Turnover</span><span class="value" id="s-turnover">—</span></div>
-  </div>
-
   <main>
-    <div class="left-col">
-      <section class="chart-panel">
-        <div class="timeframes" id="timeframes"></div>
-        <div id="chart"></div>
-      </section>
-      <section class="markets">
-        <h3>USDT-Perp pairs · sorted by 24h turnover</h3>
-        <table class="pairs">
-          <thead>
-            <tr>
-              <th>Pair</th>
-              <th class="num">Last</th>
-              <th class="num">24h %</th>
-              <th class="num">Funding</th>
-              <th class="num">24h Turnover</th>
-            </tr>
-          </thead>
-          <tbody id="pairs-tbody"></tbody>
-        </table>
-      </section>
-    </div>
-
-    <aside class="side">
-      <div class="book">
-        <h3>Order book</h3>
-        <div class="col-head"><span>Price</span><span class="num">Size</span><span class="num">Total</span></div>
-        <div class="rows" id="asks"></div>
-        <div class="spread"><span>Spread</span><strong id="spread">—</strong></div>
-        <div class="rows" id="bids"></div>
-      </div>
-      <div class="trades">
-        <h3>Recent trades</h3>
-        <div class="col-head"><span>Time</span><span class="num">Price</span><span class="num">Size</span></div>
-        <div class="rows" id="trades"></div>
-      </div>
-    </aside>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th>Pair</th>
+          <th class="num">Last</th>
+          <th class="num">24h %</th>
+          <th class="num">24h High</th>
+          <th class="num">24h Low</th>
+          <th class="num">24h Turnover</th>
+          <th class="num funding-col" hidden>Funding</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr class="skeleton-row"><td colspan="8">Loading markets…</td></tr>
+      </tbody>
+    </table>
   </main>
 
   <script>
     const CONFIG = {
       brandName: "{{brand_name}}",
-      defaultSymbol: "{{default_symbol}}",
-      intervals: {{intervals_json}},
-      intervalLabels: {{interval_labels_json}},
-      defaultInterval: "{{default_interval}}",
-      depthLimit: {{depth_limit}},
-      tradesLimit: {{trades_limit}},
+      defaultMode: "{{default_mode}}",
       topNPairs: {{top_n_pairs}}
     };
     const API = "{{api_base}}";
 
     const state = {
-      symbol: CONFIG.defaultSymbol, interval: CONFIG.defaultInterval,
-      chart: null, candleSeries: null, volumeSeries: null,
-      sideTimer: null, statsTimer: null,
-      symbols: []
+      mode: localStorage.getItem("bybit-mode") || CONFIG.defaultMode,
+      filter: "",
+      rows: []
     };
     let lastAction = null;
     const $ = s => document.querySelector(s);
@@ -228,13 +150,11 @@
     function decimalsFor(p) { p = Number(p); if (p>=100) return 2; if (p>=1) return 4; if (p>=0.01) return 5; return 7; }
     function fmtPrice(n, d=2) { if (n==null||n==="") return "—"; return Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
     function fmtBig(n) { if (n==null) return "—"; n=Number(n); if(n>=1e9) return (n/1e9).toFixed(2)+"B"; if(n>=1e6) return (n/1e6).toFixed(2)+"M"; if(n>=1e3) return (n/1e3).toFixed(2)+"K"; return n.toFixed(2); }
-    function fmtPct(n) { if (n==null||n==="") return "—"; const v=Number(n); return (v>=0?"▲ ":"▼ ")+Math.abs(v).toFixed(2)+"%"; }
-    function fmtFunding(n) { if (n==null||n==="") return "—"; const pct=Number(n)*100; return (pct>=0?"+":"")+pct.toFixed(4)+"%"; }
-    function fmtTime(ms) { return new Date(Number(ms)).toLocaleTimeString("en-GB",{hour12:false}); }
-    function fmtCountdown(ms) {
-      const d=Number(ms)-Date.now(); if (d<=0) return "";
-      const h=Math.floor(d/3600000), m=Math.floor(d%3600000/60000), s=Math.floor(d%60000/1000);
-      return `(${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")})`;
+    function fmtPct(n) { if (n==null||n==="") return "—"; const v=Number(n); return (v>=0?"+":"")+v.toFixed(2)+"%"; }
+    function fmtFunding(n) {
+      if (n == null || n === "") return "—";
+      const pct = Number(n) * 100;
+      return (pct >= 0 ? "+" : "") + pct.toFixed(4) + "%";
     }
 
     function showError(msg) { $("#error-message").textContent=msg; $("#error").hidden=false; }
@@ -250,221 +170,80 @@
       }
     }
 
-    function chartTheme() {
-      const light=document.documentElement.dataset.theme==="light";
-      return {
-        panel: light?"#ffffff":"#171b26",
-        text: light?"#64748b":"#8a93a6",
-        grid: light?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.04)",
-        border: light?"#e2e8f0":"#222531"
-      };
-    }
-    function ensureChart() {
-      if (state.chart) return;
-      const th = chartTheme();
-      state.chart = LightweightCharts.createChart($("#chart"), {
-        autoSize: true,
-        layout: { background:{color:th.panel}, textColor:th.text, fontSize:11 },
-        grid: { vertLines:{color:th.grid}, horzLines:{color:th.grid} },
-        rightPriceScale: { borderColor:th.border, scaleMargins:{top:0.08,bottom:0.28} },
-        timeScale: { borderColor:th.border, timeVisible:true },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
-      });
-      state.candleSeries = state.chart.addSeries(LightweightCharts.CandlestickSeries, {
-        upColor:"#16c784", downColor:"#ea3943",
-        wickUpColor:"#16c784", wickDownColor:"#ea3943",
-        borderVisible:false, priceLineVisible:false
-      });
-      state.volumeSeries = state.chart.addSeries(LightweightCharts.HistogramSeries, {
-        color:"rgba(255,206,58,0.45)",
-        priceFormat:{type:"volume"},
-        priceScaleId:"vol",
-        lastValueVisible:false
-      });
-      state.chart.priceScale("vol").applyOptions({ scaleMargins:{top:0.78,bottom:0} });
-    }
-    function destroyChart() {
-      if (state.chart) { state.chart.remove(); state.chart=null; state.candleSeries=null; state.volumeSeries=null; }
-    }
+    function category() { return state.mode === "spot" ? "spot" : "linear"; }
 
-    async function call(path) {
-      const res = await fetch(`${API}${path}`);
+    async function loadMarkets() {
+      const res = await fetch(`${API}/market/tickers?category=${category()}`);
       if (!res.ok) throw new Error(`Bybit ${res.status}`);
       const body = await res.json();
-      if (body.retCode !== 0) throw new Error(`Bybit retCode ${body.retCode}: ${body.retMsg||""}`);
-      return body.result;
-    }
-
-    async function loadKlines() {
-      ensureChart();
-      const data = await call(`/market/kline?category=linear&symbol=${state.symbol}&interval=${state.interval}&limit=500`);
-      // Bybit returns newest-first; reverse for chronological order.
-      const rows = (data.list || []).slice().reverse();
-      state.candleSeries.setData(rows.map(r => ({
-        time: Math.floor(Number(r[0])/1000),
-        open: Number(r[1]), high: Number(r[2]), low: Number(r[3]), close: Number(r[4])
-      })));
-      state.volumeSeries.setData(rows.map(r => ({
-        time: Math.floor(Number(r[0])/1000),
-        value: Number(r[5]),
-        color: Number(r[4]) >= Number(r[1]) ? "rgba(22,199,132,0.35)" : "rgba(234,57,67,0.35)"
-      })));
-      state.chart.timeScale().fitContent();
-    }
-
-    async function loadTicker() {
-      const data = await call(`/market/tickers?category=linear&symbol=${state.symbol}`);
-      const t = (data.list || [])[0]; if (!t) return;
-      const dec = decimalsFor(t.lastPrice);
-      $("#last-price").textContent = fmtPrice(t.lastPrice, dec);
-      const pct = Number(t.price24hPcnt) * 100;
-      const dEl = $("#last-delta");
-      dEl.textContent = fmtPct(pct);
-      dEl.className = "delta " + (pct >= 0 ? "up" : "down");
-      $("#s-mark").textContent = fmtPrice(t.markPrice, dec);
-      $("#s-index").textContent = fmtPrice(t.indexPrice, dec);
-      $("#s-high").textContent = fmtPrice(t.highPrice24h, dec);
-      $("#s-low").textContent = fmtPrice(t.lowPrice24h, dec);
-      $("#s-turnover").textContent = fmtBig(t.turnover24h) + " USDT";
-      const oi = Number(t.openInterest || 0) * Number(t.markPrice || 0);
-      $("#s-oi").textContent = fmtBig(oi) + " USDT";
-      const fundingPct = Number(t.fundingRate) * 100;
-      const fEl = $("#s-funding");
-      fEl.innerHTML = `<span class="${fundingPct >= 0 ? "down" : "up"}">${fmtFunding(t.fundingRate)}</span>
-        <span class="countdown">${fmtCountdown(t.nextFundingTime)}</span>`;
-    }
-
-    async function loadBook() {
-      const data = await call(`/market/orderbook?category=linear&symbol=${state.symbol}&limit=${CONFIG.depthLimit}`);
-      renderBook(data.b || [], data.a || []);
-    }
-    function renderBook(bids, asks) {
-      const dec = decimalsFor((asks[0] || ["1"])[0]);
-      const asksRev = [...asks].slice(0, CONFIG.depthLimit).reverse();
-      const bidsTop = bids.slice(0, CONFIG.depthLimit);
-      const maxTot = Math.max(
-        ...asksRev.map(r => Number(r[0]) * Number(r[1])),
-        ...bidsTop.map(r => Number(r[0]) * Number(r[1])),
-        1
-      );
-      const row = cls => ([p, q]) => {
-        const total = Number(p) * Number(q);
-        const w = (total / maxTot) * 100;
-        return `<div class="row ${cls}">
-          <span class="bar" style="width:${w.toFixed(1)}%"></span>
-          <span class="price">${fmtPrice(p, dec)}</span>
-          <span class="num">${fmtPrice(q, 4)}</span>
-          <span class="num">${fmtBig(total)}</span>
-        </div>`;
-      };
-      $("#asks").innerHTML = asksRev.map(row("ask")).join("");
-      $("#bids").innerHTML = bidsTop.map(row("bid")).join("");
-      if (asks.length && bids.length) {
-        const spread = Number(asks[0][0]) - Number(bids[0][0]);
-        const pct = (spread / Number(asks[0][0])) * 100;
-        $("#spread").textContent = `${fmtPrice(spread, dec)} (${pct.toFixed(3)}%)`;
-      }
-    }
-
-    async function loadTrades() {
-      const data = await call(`/market/recent-trade?category=linear&symbol=${state.symbol}&limit=${CONFIG.tradesLimit}`);
-      const rows = data.list || [];
-      const dec = decimalsFor((rows[0] || { price: "1" }).price);
-      $("#trades").innerHTML = rows.map(t => `
-        <div class="row ${t.side === "Buy" ? "buy" : "sell"}">
-          <span>${fmtTime(t.time)}</span>
-          <span class="price num">${fmtPrice(t.price, dec)}</span>
-          <span class="num">${fmtPrice(t.size, 4)}</span>
-        </div>
-      `).join("");
-    }
-
-    async function loadSymbols() {
-      const data = await call(`/market/tickers?category=linear`);
-      const rows = (data.list || [])
+      if (body.retCode !== 0) throw new Error(`Bybit retCode ${body.retCode}`);
+      const all = body.result?.list || [];
+      const usdt = all
         .filter(r => r.symbol.endsWith("USDT") && Number(r.turnover24h) > 0)
         .sort((a, b) => Number(b.turnover24h) - Number(a.turnover24h))
         .slice(0, CONFIG.topNPairs);
-      state.symbols = rows;
-      renderPicker(); renderPairs();
+      state.rows = usdt;
+      renderRows();
     }
-    function renderPicker() {
-      $("#symbol").innerHTML = state.symbols.map(r =>
-        `<option value="${r.symbol}"${r.symbol === state.symbol ? " selected" : ""}>${r.symbol}</option>`
-      ).join("");
-    }
-    function renderPairs() {
-      $("#pairs-tbody").innerHTML = state.symbols.map(r => {
+
+    function renderRows() {
+      const tbody = $("#rows");
+      const f = state.filter.toLowerCase();
+      const rows = state.rows.filter(r => !f || r.symbol.toLowerCase().includes(f));
+      const fundingCol = state.mode === "perp";
+      document.querySelectorAll(".funding-col").forEach(el => { el.hidden = !fundingCol; });
+      tbody.innerHTML = rows.map((r, i) => {
         const base = r.symbol.replace("USDT", "");
         const dec = decimalsFor(r.lastPrice);
         const pct = Number(r.price24hPcnt) * 100;
-        const fundingPct = Number(r.fundingRate) * 100;
-        return `<tr data-symbol="${r.symbol}"${r.symbol === state.symbol ? ' class="active"' : ""}>
-          <td class="sym"><span class="base">${base}</span><span class="quote">/USDT-PERP</span></td>
+        const fundingPct = r.fundingRate != null && r.fundingRate !== "" ? Number(r.fundingRate) * 100 : null;
+        return `<tr data-symbol="${r.symbol}">
+          <td class="rank">${i + 1}</td>
+          <td class="pair"><span class="base">${base}</span><span class="quote">/USDT${state.mode === "perp" ? "-PERP" : ""}</span></td>
           <td class="num">${fmtPrice(r.lastPrice, dec)}</td>
-          <td class="num ${pct >= 0 ? 'up' : 'down'}">${fmtPct(pct)}</td>
-          <td class="num ${fundingPct >= 0 ? 'fundup' : 'fundown'}">${fmtFunding(r.fundingRate)}</td>
+          <td class="num ${pct >= 0 ? "up" : "down"}">${fmtPct(pct)}</td>
+          <td class="num">${fmtPrice(r.highPrice24h, dec)}</td>
+          <td class="num">${fmtPrice(r.lowPrice24h, dec)}</td>
           <td class="num">${fmtBig(r.turnover24h)} USDT</td>
+          ${fundingCol ? `<td class="num ${fundingPct == null ? "" : (fundingPct >= 0 ? "fund-up" : "fund-down")}">${fmtFunding(r.fundingRate)}</td>` : ""}
         </tr>`;
       }).join("");
     }
 
-    function renderTimeframes() {
-      $("#timeframes").innerHTML = CONFIG.intervals.map((iv, i) =>
-        `<button data-iv="${iv}"${iv === state.interval ? ' class="active"' : ""}>${CONFIG.intervalLabels[i]}</button>`
-      ).join("");
-    }
-
-    function startPolling() {
-      stopPolling();
-      state.sideTimer = setInterval(() => { loadBook().catch(()=>{}); loadTrades().catch(()=>{}); }, 2000);
-      state.statsTimer = setInterval(() => loadTicker().catch(()=>{}), 5000);
-    }
-    function stopPolling() {
-      if (state.sideTimer) { clearInterval(state.sideTimer); state.sideTimer = null; }
-      if (state.statsTimer) { clearInterval(state.statsTimer); state.statsTimer = null; }
+    function applyMode(mode) {
+      state.mode = mode;
+      localStorage.setItem("bybit-mode", mode);
+      document.querySelectorAll("#mode-tabs button").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+      runAction(loadMarkets);
     }
 
     function applyTheme(t) {
       document.documentElement.dataset.theme = t;
       localStorage.setItem("cg-theme", t);
       $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
-      if (state.chart) { destroyChart(); runAction(loadKlines); }
     }
 
     function bindEvents() {
-      $("#symbol").addEventListener("change", e => { state.symbol = e.target.value; runAction(loadAll); });
-      $("#pairs-tbody").addEventListener("click", e => {
+      $("#mode-tabs").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-mode]");
+        if (btn) applyMode(btn.dataset.mode);
+      });
+      $("#search").addEventListener("input", e => { state.filter = e.target.value; renderRows(); });
+      $("#rows").addEventListener("click", e => {
         const tr = e.target.closest("tr[data-symbol]");
         if (!tr) return;
-        state.symbol = tr.dataset.symbol;
-        renderPicker(); renderPairs();
-        runAction(loadAll);
-      });
-      $("#timeframes").addEventListener("click", e => {
-        const btn = e.target.closest("button[data-iv]");
-        if (!btn) return;
-        $("#timeframes button.active")?.classList.remove("active");
-        btn.classList.add("active");
-        state.interval = btn.dataset.iv;
-        runAction(loadKlines);
+        location.href = `./trade.html?symbol=${encodeURIComponent(tr.dataset.symbol)}&mode=${state.mode}`;
       });
       $("#theme-toggle").addEventListener("click", () => {
         applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
       });
       $("#retry").addEventListener("click", () => { if (lastAction) runAction(lastAction); });
-      window.addEventListener("beforeunload", stopPolling);
       applyTheme(document.documentElement.dataset.theme);
     }
 
-    async function loadAll() {
-      await Promise.all([loadKlines(), loadTicker(), loadBook(), loadTrades()]);
-      startPolling();
-    }
-
-    renderTimeframes();
+    document.querySelectorAll("#mode-tabs button").forEach(b => b.classList.toggle("active", b.dataset.mode === state.mode));
     bindEvents();
-    runAction(async () => { await loadSymbols(); await loadAll(); });
+    runAction(loadMarkets);
   </script>
 </body>
 </html>
