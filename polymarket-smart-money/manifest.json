@@ -1,0 +1,15 @@
+{
+  "slug": "polymarket-smart-money",
+  "name": "Polymarket Smart Money",
+  "tagline": "Polymarket markets ranked by smart-money cohort activity. Switch between Flows (biggest net inflow) and Mispricings (cohort bought below mid). Powered by the Vike API.",
+  "tag": "Prediction · Vike",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Polymarket Smart Money"
+  },
+  "upstreams": {
+    "vike": { "base": "https://vike.io" }
+  },
+  "api_key_env": "VIKE_API_KEY",
+  "api_key_header": "X-API-KEY"
+}

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="{{tagline}}">
+  <meta property="og:title" content="{{name}}">
+  <meta property="og:description" content="{{tagline}}">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #0d1421; --panel: #171b26; --border: #222531;
+      --text: #e9edf3; --mute: #8a93a6;
+      --green: #16c784; --red: #ea3943;
+      --accent: #50d2c1;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+      --text: #0f172a; --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 24px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    header.top .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+    header.top .brand::before { content: "◆"; color: var(--accent); }
+    .controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+    .ctrl-label { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.4px; margin-right: 2px; }
+    select, input.num {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 10px; font-size: 13px; font-variant-numeric: tabular-nums;
+    }
+    input.num { width: 90px; text-align: right; }
+    select:focus, input.num:focus { outline: none; border-color: var(--accent); }
+    button {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 12px; font-size: 13px; cursor: pointer; font-weight: 600;
+    }
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: progress; }
+    button.primary { background: var(--accent); color: #0d1421; border: none; }
+    button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+    #error {
+      margin: 12px 24px 0; padding: 10px 14px;
+      background: rgba(234,57,67,0.12); border: 1px solid var(--red); border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #error[hidden] { display: none; }
+
+    .meta {
+      max-width: 1200px; margin: 18px auto 6px; padding: 0 24px;
+      color: var(--mute); font-size: 12px;
+    }
+    .meta strong { color: var(--text); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 8px 24px 60px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 64px;
+      background: var(--bg); color: var(--mute);
+      text-align: left; font-weight: 500; font-size: 11px;
+      letter-spacing: 0.4px; text-transform: uppercase;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    thead th.num { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: var(--panel); }
+    tbody td { padding: 12px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+    td.num { text-align: right; }
+    td.rank { color: var(--mute); width: 50px; }
+    td.addr { font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 12px; }
+    td.addr a { color: var(--text); }
+    td.addr a:hover { color: var(--accent); text-decoration: none; }
+    td.up { color: var(--green); }
+    td.down { color: var(--red); }
+    td.pnl.big { font-weight: 700; }
+    td.winrate.high { color: var(--green); font-weight: 600; }
+    .skeleton-row td { color: var(--mute); padding: 22px; text-align: center; }
+    .empty-row td { color: var(--mute); padding: 22px; text-align: center; font-size: 12px; }
+  </style>
+  <script>
+    (function () { document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark'; })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">{{brand_name}}</div>
+    <div class="controls">
+      <span class="ctrl-label">Window</span>
+      <select id="window">
+        <option value="1d">1 day</option>
+        <option value="7d">7 days</option>
+        <option value="30d" selected>30 days</option>
+        <option value="all">all-time</option>
+      </select>
+      <span class="ctrl-label">Sort</span>
+      <select id="sort">
+        <option value="pnl" selected>Realized PnL</option>
+        <option value="roi">ROI %</option>
+        <option value="win_rate">Win rate</option>
+        <option value="volume">Volume</option>
+        <option value="trade_count">Trade count</option>
+        <option value="drawdown">Max drawdown</option>
+      </select>
+      <span class="ctrl-label">Min trades</span>
+      <input id="min-trades" class="num" type="number" min="0" step="1" value="3">
+      <span class="ctrl-label">Min win %</span>
+      <input id="min-win" class="num" type="number" min="0" max="100" step="1" value="0">
+      <button id="apply" class="primary" type="button">Apply</button>
+      <button id="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <div id="error" hidden>
+    <span id="error-message"></span>
+    <button id="retry" type="button">Retry</button>
+  </div>
+
+  <div class="meta">
+    <span id="meta-status">Loading…</span>
+  </div>
+
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th>Address</th>
+          <th class="num">Realized PnL</th>
+          <th class="num">ROI</th>
+          <th class="num">Win rate</th>
+          <th class="num">Trades</th>
+          <th class="num">Volume</th>
+          <th class="num">Long PnL</th>
+          <th class="num">Short PnL</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr class="skeleton-row"><td colspan="9">Loading Hyperliquid traders…</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const CONFIG = { brandName: "{{brand_name}}" };
+    const VIKE_MCP = "/api/hl-top-traders/vike/mcp";
+
+    const state = { rows: [], total: 0 };
+    let lastAction = null;
+    const $ = s => document.querySelector(s);
+
+    function fmtUsd(n) {
+      if (n == null || Number.isNaN(Number(n))) return "—";
+      const v = Number(n);
+      const sign = v < 0 ? "-" : "";
+      const abs = Math.abs(v);
+      if (abs >= 1e9) return sign + "$" + (abs/1e9).toFixed(2) + "B";
+      if (abs >= 1e6) return sign + "$" + (abs/1e6).toFixed(2) + "M";
+      if (abs >= 1e3) return sign + "$" + (abs/1e3).toFixed(2) + "K";
+      return sign + "$" + abs.toFixed(2);
+    }
+    function fmtPct(n, d = 2) {
+      if (n == null) return "—";
+      const v = Number(n);
+      return (v >= 0 ? "+" : "") + v.toFixed(d) + "%";
+    }
+    function fmtInt(n) {
+      if (n == null) return "—";
+      return Number(n).toLocaleString("en-US");
+    }
+    function shortAddr(a) {
+      if (!a) return "—";
+      return a.slice(0, 6) + "…" + a.slice(-4);
+    }
+
+    function showError(msg) { $("#error-message").textContent = msg; $("#error").hidden = false; }
+    function hideError() { $("#error").hidden = true; }
+    async function runAction(fn) {
+      lastAction = fn; hideError();
+      try { await fn(); }
+      catch (err) {
+        console.error(err);
+        showError("Could not load traders — " + String(err).slice(0, 160));
+      }
+    }
+
+    async function loadTraders() {
+      $("#apply").disabled = true;
+      $("#meta-status").textContent = "Loading…";
+      const args = {
+        window: $("#window").value,
+        sort: $("#sort").value,
+        size: 20,
+        min_trades: Number($("#min-trades").value || 0),
+        min_win_rate: Number($("#min-win").value || 0)
+      };
+      try {
+        const res = await fetch(VIKE_MCP, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0", id: 1, method: "tools/call",
+            params: { name: "hl_perp_top_traders", arguments: args }
+          })
+        });
+        if (!res.ok) throw new Error(`Vike proxy ${res.status}`);
+        const env = await res.json();
+        if (env.error) throw new Error(`Vike: ${env.error.message || env.error.code}`);
+        const text = env.result?.content?.[0]?.text;
+        if (!text) throw new Error("Vike returned no content");
+        const data = JSON.parse(text);
+        state.rows = data.traders || [];
+        state.total = data.total || 0;
+        renderRows();
+        $("#meta-status").innerHTML =
+          `Showing <strong>${state.rows.length}</strong> of <strong>${fmtInt(state.total)}</strong> tracked wallets, ` +
+          `sorted by <strong>${$("#sort").selectedOptions[0].textContent}</strong> over the <strong>${$("#window").selectedOptions[0].textContent}</strong> window. ` +
+          `<em>Source: vike.io/mcp · hl_perp_top_traders</em>`;
+      } finally {
+        $("#apply").disabled = false;
+      }
+    }
+
+    function renderRows() {
+      const tbody = $("#rows");
+      if (!state.rows.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No traders match these filters.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = state.rows.map((r, i) => {
+        const pnlCls = r.total_realized_pnl >= 0 ? "up" : "down";
+        const big = Math.abs(r.total_realized_pnl) >= 1e6 ? " big" : "";
+        const winCls = r.win_rate_pct >= 65 ? " high" : "";
+        const roiCls = r.roi_pct >= 0 ? "up" : "down";
+        const longCls = r.long_pnl >= 0 ? "up" : "down";
+        const shortCls = r.short_pnl >= 0 ? "up" : "down";
+        const link = `https://app.hyperliquid.xyz/explorer/address/${r.address}`;
+        return `<tr>
+          <td class="rank">${i + 1}</td>
+          <td class="addr"><a href="${link}" target="_blank" rel="noopener noreferrer">${shortAddr(r.address)}</a></td>
+          <td class="num pnl ${pnlCls}${big}">${fmtUsd(r.total_realized_pnl)}</td>
+          <td class="num ${roiCls}">${fmtPct(r.roi_pct, 1)}</td>
+          <td class="num winrate${winCls}">${fmtPct(r.win_rate_pct, 1)}</td>
+          <td class="num">${fmtInt(r.trade_count)}</td>
+          <td class="num">${fmtUsd(r.total_volume)}</td>
+          <td class="num ${longCls}">${fmtUsd(r.long_pnl)}</td>
+          <td class="num ${shortCls}">${fmtUsd(r.short_pnl)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+    }
+
+    $("#apply").addEventListener("click", () => runAction(loadTraders));
+    $("#theme-toggle").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    });
+    $("#retry").addEventListener("click", () => { if (lastAction) runAction(lastAction); });
+    applyTheme(document.documentElement.dataset.theme);
+
+    runAction(loadTraders);
+  </script>
+</body>
+</html>

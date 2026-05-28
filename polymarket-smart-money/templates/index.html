@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="{{tagline}}">
+  <meta property="og:title" content="{{name}}">
+  <meta property="og:description" content="{{tagline}}">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #0d1421; --panel: #171b26; --border: #222531;
+      --text: #e9edf3; --mute: #8a93a6;
+      --green: #16c784; --red: #ea3943;
+      --accent: #6366f1;
+      --polymarket: #2d9cdb;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+      --text: #0f172a; --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 24px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    header.top .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+    header.top .brand::before { content: "◆"; color: var(--accent); }
+
+    .mode-tabs { display: inline-flex; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px; }
+    .mode-tabs button { background: transparent; color: var(--mute); border: none; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; cursor: pointer; }
+    .mode-tabs button.active { background: var(--panel); color: var(--text); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+    .controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+    .ctrl-label { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.4px; margin-right: 2px; }
+    input.num, input.text {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 10px; font-size: 13px;
+    }
+    input.num { width: 70px; text-align: right; font-variant-numeric: tabular-nums; }
+    input.text { width: 140px; }
+    input:focus { outline: none; border-color: var(--accent); }
+    button {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 12px; font-size: 13px; cursor: pointer; font-weight: 600;
+    }
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: progress; }
+    button.primary { background: var(--accent); color: #fff; border: none; }
+    button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+    #error {
+      margin: 12px 24px 0; padding: 10px 14px;
+      background: rgba(234,57,67,0.12); border: 1px solid var(--red); border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #error[hidden] { display: none; }
+
+    .meta {
+      max-width: 1200px; margin: 18px auto 6px; padding: 0 24px;
+      color: var(--mute); font-size: 12px;
+    }
+    .meta strong { color: var(--text); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 8px 24px 60px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 64px;
+      background: var(--bg); color: var(--mute);
+      text-align: left; font-weight: 500; font-size: 11px;
+      letter-spacing: 0.4px; text-transform: uppercase;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+    }
+    thead th.num { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: var(--panel); }
+    tbody td { padding: 12px; vertical-align: middle; font-variant-numeric: tabular-nums; }
+    td.num { text-align: right; }
+    td.rank { color: var(--mute); width: 40px; }
+    td.market { max-width: 480px; }
+    td.market a { color: var(--text); font-weight: 600; }
+    td.market a:hover { color: var(--accent); text-decoration: none; }
+    td.market .last-ts { color: var(--mute); font-size: 11px; margin-top: 2px; }
+    td.up { color: var(--green); }
+    td.down { color: var(--red); }
+    td.net.big { font-weight: 700; }
+    td.midprice .price { font-weight: 600; }
+    .skeleton-row td { color: var(--mute); padding: 22px; text-align: center; }
+    .empty-row td { color: var(--mute); padding: 22px; text-align: center; font-size: 12px; }
+  </style>
+  <script>
+    (function () { document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark'; })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">{{brand_name}}</div>
+    <div class="mode-tabs" id="mode-tabs">
+      <button data-mode="flows" class="active">Flows</button>
+      <button data-mode="mispricings">Mispricings</button>
+    </div>
+    <div class="controls">
+      <span class="ctrl-label">Hours</span>
+      <input id="hours" class="num" type="number" min="1" max="168" step="1" value="24">
+      <span class="ctrl-label">Category</span>
+      <input id="category" class="text" type="text" placeholder="all">
+      <button id="apply" class="primary" type="button">Apply</button>
+      <button id="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <div id="error" hidden>
+    <span id="error-message"></span>
+    <button id="retry" type="button">Retry</button>
+  </div>
+
+  <div class="meta">
+    <span id="meta-status">Loading…</span>
+  </div>
+
+  <main>
+    <table>
+      <thead>
+        <tr id="thead-row"></tr>
+      </thead>
+      <tbody id="rows">
+        <tr class="skeleton-row"><td colspan="6">Loading Polymarket smart-money signals…</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const CONFIG = { brandName: "{{brand_name}}" };
+    const VIKE_MCP = "/api/polymarket-smart-money/vike/mcp";
+
+    const state = {
+      mode: localStorage.getItem("poly-mode") || "flows",
+      rows: []
+    };
+    let lastAction = null;
+    const $ = s => document.querySelector(s);
+
+    function fmtUsd(n) {
+      if (n == null || Number.isNaN(Number(n))) return "—";
+      const v = Number(n);
+      const sign = v < 0 ? "-" : "";
+      const abs = Math.abs(v);
+      if (abs >= 1e6) return sign + "$" + (abs/1e6).toFixed(2) + "M";
+      if (abs >= 1e3) return sign + "$" + (abs/1e3).toFixed(2) + "K";
+      return sign + "$" + abs.toFixed(2);
+    }
+    function fmtInt(n) {
+      if (n == null) return "—";
+      return Number(n).toLocaleString("en-US");
+    }
+    function fmtMid(n) {
+      if (n == null || n === 0) return "—";
+      return (Number(n) * 100).toFixed(1) + "¢";
+    }
+    function fmtTime(s) {
+      if (!s) return "—";
+      // Server returns "2026-05-28 18:39:36" (UTC). Show as HH:MM:SS local.
+      const d = new Date(s.replace(" ", "T") + "Z");
+      const ago = (Date.now() - d.getTime()) / 60000;
+      if (ago < 1) return "just now";
+      if (ago < 60) return `${Math.round(ago)}m ago`;
+      if (ago < 1440) return `${Math.round(ago / 60)}h ago`;
+      return `${Math.round(ago / 1440)}d ago`;
+    }
+
+    function showError(msg) { $("#error-message").textContent = msg; $("#error").hidden = false; }
+    function hideError() { $("#error").hidden = true; }
+    async function runAction(fn) {
+      lastAction = fn; hideError();
+      try { await fn(); }
+      catch (err) {
+        console.error(err);
+        showError("Could not load signals — " + String(err).slice(0, 160));
+      }
+    }
+
+    async function loadSignals() {
+      $("#apply").disabled = true;
+      $("#meta-status").textContent = "Loading…";
+      const args = {
+        mode: state.mode,
+        hours: Number($("#hours").value || 24),
+        limit: 15
+      };
+      const cat = $("#category").value.trim();
+      if (cat) args.category = cat;
+      try {
+        const res = await fetch(VIKE_MCP, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0", id: 1, method: "tools/call",
+            params: { name: "polymarket_smart_money", arguments: args }
+          })
+        });
+        if (!res.ok) throw new Error(`Vike proxy ${res.status}`);
+        const env = await res.json();
+        if (env.error) throw new Error(`Vike: ${env.error.message || env.error.code}`);
+        const text = env.result?.content?.[0]?.text;
+        if (!text) throw new Error("Vike returned no content");
+        state.rows = JSON.parse(text);
+        renderHeader();
+        renderRows();
+        $("#meta-status").innerHTML =
+          `Mode: <strong>${state.mode}</strong>, lookback <strong>${args.hours}h</strong>` +
+          (cat ? `, category <strong>${cat}</strong>` : "") +
+          `. Cohort = wallets with $1k+ realized PnL across 5+ resolved markets. ` +
+          `<em>Source: vike.io/mcp · polymarket_smart_money</em>`;
+      } finally {
+        $("#apply").disabled = false;
+      }
+    }
+
+    function renderHeader() {
+      const thead = $("#thead-row");
+      if (state.mode === "flows") {
+        thead.innerHTML = `
+          <th class="rank">#</th>
+          <th>Market</th>
+          <th class="num">Smart wallets</th>
+          <th class="num">Net inflow</th>
+          <th class="num">Buy</th>
+          <th class="num">Sell</th>
+          <th class="num">Trades</th>
+          <th class="num">Last activity</th>
+        `;
+      } else {
+        thead.innerHTML = `
+          <th class="rank">#</th>
+          <th>Market</th>
+          <th class="num">Smart wallets</th>
+          <th class="num">Cohort avg</th>
+          <th class="num">Current mid</th>
+          <th class="num">Edge</th>
+          <th class="num">Last activity</th>
+        `;
+      }
+    }
+
+    function renderRows() {
+      const tbody = $("#rows");
+      if (!state.rows.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No signals match these filters.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = state.rows.map((r, i) => {
+        const polyUrl = `https://polymarket.com/event/${r.slug}`;
+        const titleCell = `
+          <td class="market">
+            <a href="${polyUrl}" target="_blank" rel="noopener noreferrer">${r.title || r.slug || "—"}</a>
+            <div class="last-ts">${r.slug ? r.slug : ""}</div>
+          </td>`;
+        if (state.mode === "flows") {
+          const netCls = r.net_inflow >= 0 ? "up" : "down";
+          const big = Math.abs(r.net_inflow) >= 25000 ? " big" : "";
+          return `<tr>
+            <td class="rank">${i + 1}</td>
+            ${titleCell}
+            <td class="num">${fmtInt(r.smart_wallets)}</td>
+            <td class="num net ${netCls}${big}">${fmtUsd(r.net_inflow)}</td>
+            <td class="num up">${fmtUsd(r.buy_inflow)}</td>
+            <td class="num down">${fmtUsd(r.sell_outflow)}</td>
+            <td class="num">${fmtInt(r.trades)}</td>
+            <td class="num">${fmtTime(r.last_ts)}</td>
+          </tr>`;
+        } else {
+          // mispricings shape: cohort_avg_price, current_mid, edge_bps (best-effort field names)
+          const edge = r.edge_bps != null ? r.edge_bps : null;
+          const edgeCls = edge != null && edge >= 0 ? "up" : "down";
+          return `<tr>
+            <td class="rank">${i + 1}</td>
+            ${titleCell}
+            <td class="num">${fmtInt(r.smart_wallets)}</td>
+            <td class="num midprice"><span class="price">${fmtMid(r.cohort_avg_price ?? r.cohort_avg ?? r.avg_buy_price)}</span></td>
+            <td class="num midprice"><span class="price">${fmtMid(r.current_mid ?? r.yes_mid)}</span></td>
+            <td class="num ${edgeCls}">${edge != null ? (edge >= 0 ? "+" : "") + edge.toFixed(0) + " bps" : "—"}</td>
+            <td class="num">${fmtTime(r.last_ts)}</td>
+          </tr>`;
+        }
+      }).join("");
+    }
+
+    function applyMode(mode) {
+      state.mode = mode;
+      localStorage.setItem("poly-mode", mode);
+      document.querySelectorAll("#mode-tabs button").forEach(b => b.classList.toggle("active", b.dataset.mode === mode));
+      runAction(loadSignals);
+    }
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+    }
+
+    $("#mode-tabs").addEventListener("click", e => {
+      const btn = e.target.closest("button[data-mode]");
+      if (btn) applyMode(btn.dataset.mode);
+    });
+    $("#apply").addEventListener("click", () => runAction(loadSignals));
+    $("#theme-toggle").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    });
+    $("#retry").addEventListener("click", () => { if (lastAction) runAction(lastAction); });
+    applyTheme(document.documentElement.dataset.theme);
+
+    document.querySelectorAll("#mode-tabs button").forEach(b => b.classList.toggle("active", b.dataset.mode === state.mode));
+    runAction(loadSignals);
+  </script>
+</body>
+</html>

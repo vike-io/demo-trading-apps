@@ -1,0 +1,15 @@
+{
+  "slug": "hl-top-traders",
+  "name": "Hyperliquid Top Traders",
+  "tagline": "Top Hyperliquid perpetuals wallets ranked by PnL, ROI, win rate, volume, trades, or drawdown — across 1d / 7d / 30d / all-time windows. Powered by the Vike API.",
+  "tag": "On-chain · Vike",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Hyperliquid Top Traders"
+  },
+  "upstreams": {
+    "vike": { "base": "https://vike.io" }
+  },
+  "api_key_env": "VIKE_API_KEY",
+  "api_key_header": "X-API-KEY"
+}
