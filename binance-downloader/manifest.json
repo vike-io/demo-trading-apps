@@ -1,0 +1,14 @@
+{
+  "slug": "binance-downloader",
+  "name": "Binance Downloader",
+  "tagline": "Pick a symbol, interval, and date range; stream Binance klines and download as CSV. Same logic ships as a Python CLI too.",
+  "tag": "Data export",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Binance Downloader",
+    "default_symbol": "BTCUSDT",
+    "default_interval": "1h",
+    "intervals": ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]
+  },
+  "upstream_base": "https://api.binance.com/api/v3"
+}

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="description" content="{{tagline}}">
+  <meta property="og:title" content="{{name}}">
+  <meta property="og:description" content="{{tagline}}">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #0d1421; --panel: #171b26; --border: #222531;
+      --text: #e9edf3; --mute: #8a93a6;
+      --green: #16c784; --red: #ea3943;
+      --accent: #f0b90b;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+      --text: #0f172a; --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 24px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    header.top .brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+    header.top .brand::before { content: "◆"; color: var(--accent); }
+    .theme-toggle {
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 10px; font-size: 14px; cursor: pointer;
+      margin-left: auto;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    main { max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1 { margin: 0 0 6px; font-size: 26px; }
+    .lede { margin: 0 0 28px; color: var(--mute); font-size: 14px; }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 22px;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    label { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    input, select {
+      width: 100%;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 9px 11px; font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+    .actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+    button.primary {
+      background: var(--accent); color: #0d1421; border: none;
+      padding: 11px 22px; border-radius: 8px; font-weight: 700;
+      font-size: 14px; cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.55; cursor: progress; }
+    button.primary:hover:not(:disabled) { filter: brightness(1.07); }
+
+    .progress {
+      margin-top: 18px; padding: 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+      font-size: 12px;
+      max-height: 180px; overflow: auto;
+      white-space: pre;
+    }
+    .progress[hidden] { display: none; }
+    .progress .ok { color: var(--green); }
+    .progress .err { color: var(--red); }
+
+    .cli-tip {
+      margin-top: 24px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px;
+      font-size: 13px;
+    }
+    .cli-tip h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--mute); font-weight: 700; }
+    .cli-tip code {
+      display: block; font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+      background: var(--panel); padding: 8px 12px; border-radius: 6px;
+      color: var(--text); font-size: 12px;
+      white-space: pre-wrap;
+    }
+  </style>
+  <script>
+    (function () { document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark'; })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">{{brand_name}}</div>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+  </header>
+
+  <main>
+    <h1>Download Binance klines as CSV</h1>
+    <p class="lede">Pick a pair, an interval, and a date range. The browser streams paginated requests through the
+    <code>/api/binance-downloader/</code> proxy on this Worker, assembles the rows, and saves a CSV to your machine.
+    Same column layout as the Python CLI shipped in this case (<code>download.py</code>).</p>
+
+    <section class="panel">
+      <div class="row">
+        <div>
+          <label for="symbol">Symbol</label>
+          <input id="symbol" type="text" value="{{default_symbol}}" placeholder="BTCUSDT">
+        </div>
+        <div>
+          <label for="interval">Interval</label>
+          <select id="interval"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="start">Start date (UTC, inclusive)</label>
+          <input id="start" type="date">
+        </div>
+        <div>
+          <label for="end">End date (UTC, exclusive)</label>
+          <input id="end" type="date">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="go" class="primary" type="button">Download CSV</button>
+        <span id="hint" style="color: var(--mute); font-size: 12px;"></span>
+      </div>
+      <div id="progress" class="progress" hidden></div>
+    </section>
+
+    <div class="cli-tip">
+      <h3>Same logic, as a Python CLI</h3>
+      <code>cd binance-downloader
+python download.py BTCUSDT 1h 2024-01-01 2024-06-30 btc-1h.csv</code>
+    </div>
+  </main>
+
+  <script>
+    const CONFIG = {
+      brandName: "{{brand_name}}",
+      defaultSymbol: "{{default_symbol}}",
+      defaultInterval: "{{default_interval}}",
+      intervals: {{intervals_json}}
+    };
+    const API = "{{api_base}}";
+    const LIMIT = 1000;
+
+    // Mirror the CLI's CSV_COLUMNS list in templates/download.py.
+    const CSV_COLUMNS = [
+      "open_time", "open", "high", "low", "close", "volume",
+      "close_time", "quote_volume", "trade_count",
+      "taker_buy_volume", "taker_buy_quote_volume"
+    ];
+
+    const INTERVAL_MS = {
+      "1m": 60_000, "3m": 180_000, "5m": 300_000, "15m": 900_000,
+      "30m": 1_800_000, "1h": 3_600_000, "2h": 7_200_000, "4h": 14_400_000,
+      "6h": 21_600_000, "8h": 28_800_000, "12h": 43_200_000,
+      "1d": 86_400_000, "3d": 259_200_000, "1w": 604_800_000, "1M": 2_592_000_000
+    };
+
+    const $ = s => document.querySelector(s);
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+    }
+
+    function populateIntervals() {
+      const sel = $("#interval");
+      sel.innerHTML = CONFIG.intervals
+        .map(iv => `<option value="${iv}"${iv === CONFIG.defaultInterval ? " selected" : ""}>${iv}</option>`)
+        .join("");
+    }
+
+    function defaultDates() {
+      // Default to last 30 days.
+      const today = new Date();
+      const start = new Date(today.getTime() - 30 * 86400 * 1000);
+      $("#start").value = start.toISOString().slice(0, 10);
+      $("#end").value = today.toISOString().slice(0, 10);
+    }
+
+    function log(line, cls = "") {
+      const el = $("#progress");
+      el.hidden = false;
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = line + "\n";
+      el.appendChild(span);
+      el.scrollTop = el.scrollHeight;
+    }
+    function clearLog() { $("#progress").innerHTML = ""; $("#progress").hidden = true; }
+
+    function toMs(yyyyMmDd) {
+      // Treat YYYY-MM-DD as UTC midnight.
+      return Date.UTC(...yyyyMmDd.split("-").map(Number).map((n, i) => i === 1 ? n - 1 : n));
+    }
+
+    function csvCell(v) {
+      // Numbers/strings only — Binance never emits commas, but defensive quote anyway.
+      const s = String(v);
+      return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    async function fetchChunk(symbol, interval, startMs, endMs) {
+      const url = `${API}/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`
+        + `&startTime=${startMs}&endTime=${endMs}&limit=${LIMIT}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`Binance ${res.status}: ${body.slice(0, 160)}`);
+      }
+      return await res.json();
+    }
+
+    async function downloadCsv() {
+      clearLog();
+      const symbol = $("#symbol").value.trim().toUpperCase();
+      const interval = $("#interval").value;
+      const startMs = toMs($("#start").value);
+      const endMs = toMs($("#end").value);
+      if (!symbol) return log("Symbol required.", "err");
+      if (!INTERVAL_MS[interval]) return log(`Unsupported interval ${interval}.`, "err");
+      if (!(startMs < endMs)) return log("Start must be before end.", "err");
+
+      const btn = $("#go");
+      btn.disabled = true;
+
+      const step = INTERVAL_MS[interval] * LIMIT;
+      let cursor = startMs;
+      let page = 0;
+      const rows = [];
+      log(`Fetching ${symbol} ${interval} ${$("#start").value} → ${$("#end").value}`);
+      try {
+        while (cursor < endMs) {
+          page += 1;
+          const chunkEnd = Math.min(cursor + step, endMs);
+          const chunk = await fetchChunk(symbol, interval, cursor, chunkEnd);
+          if (!chunk.length) break;
+          const firstTs = new Date(chunk[0][0]).toISOString().slice(0, 10);
+          const lastTs = new Date(chunk[chunk.length - 1][0]).toISOString().slice(0, 10);
+          log(`  page ${page}: ${chunk.length} rows, ${firstTs}…${lastTs}`);
+          for (const r of chunk) rows.push(r.slice(0, 11));
+          cursor = chunk[chunk.length - 1][0] + INTERVAL_MS[interval];
+        }
+      } catch (err) {
+        log(String(err), "err");
+        btn.disabled = false;
+        return;
+      }
+
+      log(`Assembling CSV (${rows.length} rows)…`);
+      const csv = [
+        CSV_COLUMNS.join(","),
+        ...rows.map(r => r.map(csvCell).join(","))
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const fname = `${symbol}_${interval}_${$("#start").value}_${$("#end").value}.csv`;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      log(`Saved ${fname}`, "ok");
+      btn.disabled = false;
+    }
+
+    populateIntervals();
+    defaultDates();
+    $("#theme-toggle").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    });
+    applyTheme(document.documentElement.dataset.theme);
+    $("#go").addEventListener("click", downloadCsv);
+  </script>
+</body>
+</html>
