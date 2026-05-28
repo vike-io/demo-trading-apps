@@ -70,6 +70,9 @@ def build_case(manifest: dict) -> None:
     vars: dict[str, str] = {k: stringify(v) for k, v in manifest.get("config", {}).items()}
     vars["slug"] = slug
     vars["api_base"] = f"/api/{slug}"
+    # Top-level manifest fields the templates can pull into <meta>:
+    vars["name"] = manifest.get("name", slug)
+    vars["tagline"] = manifest.get("tagline", "")
     # JSON-encoded form for JS:
     for k, v in list(manifest.get("config", {}).items()):
         if isinstance(v, list):
@@ -108,6 +111,21 @@ def build_landing(cases: list[dict]) -> None:
     DIST.mkdir(exist_ok=True)
     (DIST / "index.html").write_text(html, encoding="utf-8")
     print("  wrote .dist/index.html")
+
+
+def write_favicon() -> None:
+    """Generate a small brand favicon. One SVG for the whole site —
+    each page references /favicon.svg from the absolute root."""
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        '<rect width="32" height="32" rx="6" fill="#0d1421"/>'
+        '<rect x="6" y="20" width="4" height="6" fill="#16c784"/>'
+        '<rect x="13" y="13" width="4" height="13" fill="#16c784"/>'
+        '<rect x="20" y="7" width="4" height="19" fill="#16c784"/>'
+        "</svg>"
+    )
+    (DIST / "favicon.svg").write_text(svg, encoding="utf-8")
+    print("  wrote .dist/favicon.svg")
 
 
 def write_routing_manifest(cases: list[dict]) -> None:
@@ -152,6 +170,7 @@ def main() -> None:
     print("Building landing…")
     build_landing(all_cases)
     write_routing_manifest(all_cases)
+    write_favicon()
     print(f"\nDone. Built {len(cases)} case(s).")
 
 
