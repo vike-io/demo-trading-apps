@@ -63,6 +63,18 @@ A non-tracker case that plugs into the same umbrella. The browser version stream
 
 Two implementations of cross-exchange funding-rate dispersion stacked on one page. **Section 1 (DIY)** joins Binance perp `premiumIndex` with Bybit linear tickers via the existing exchange proxies — two-venue coverage, you write the math. **Section 2 (Vike API)** POSTs one JSON-RPC `tools/call` to `vike.io/mcp` through this Worker (which attaches the `X-API-KEY` from a secret) and gets the top spreads across 6+ venues pre-ranked, normalised to daily %, with optimal long/short legs already chosen. The contrast is the point.
 
+### Hyperliquid Top Traders — leaderboards over 1d / 7d / 30d / all-time
+
+[![HL traders](./assets/screenshots/hl-top-traders.png)](https://demo.vike.io/hl-top-traders/)
+
+Ranks Hyperliquid perp wallets by PnL / ROI / win rate / volume / trade count / drawdown across any time window, with minimum-trades and minimum-win-rate filters in the header. Each row links the address through to `app.hyperliquid.xyz/explorer` and shows the long/short PnL split. Single `tools/call` → `hl_perp_top_traders` on the Vike API.
+
+### Polymarket Smart Money — flows + mispricings
+
+[![Polymarket](./assets/screenshots/polymarket-smart-money.png)](https://demo.vike.io/polymarket-smart-money/)
+
+Markets ranked by smart-money cohort activity (wallets with $1k+ realized PnL across 5+ resolved markets). Toggle between **Flows** (biggest net cohort inflow in the lookback window) and **Mispricings** (cohort bought meaningfully below current mid). Configurable hours + category, every row links straight to the live Polymarket event. Single `tools/call` → `polymarket_smart_money` on the Vike API.
+
 ## Cases
 
 | Case | Demo | Data source | Status |
@@ -74,6 +86,8 @@ Two implementations of cross-exchange funding-rate dispersion stacked on one pag
 | [`okx-tracker/`](./okx-tracker/) | [demo.vike.io/okx-tracker/](https://demo.vike.io/okx-tracker/) | OKX v5 (spot + swap) | ✅ live |
 | [`binance-downloader/`](./binance-downloader/) | [demo.vike.io/binance-downloader/](https://demo.vike.io/binance-downloader/) | Binance v3 | ✅ live |
 | [`perp-funding-spread/`](./perp-funding-spread/) | [demo.vike.io/perp-funding-spread/](https://demo.vike.io/perp-funding-spread/) | DIY: Binance + Bybit perps · Vike: `vike.io/mcp` (`X-API-KEY`) | ✅ live |
+| [`hl-top-traders/`](./hl-top-traders/) | [demo.vike.io/hl-top-traders/](https://demo.vike.io/hl-top-traders/) | Vike: `vike.io/mcp` → `hl_perp_top_traders` | ✅ live |
+| [`polymarket-smart-money/`](./polymarket-smart-money/) | [demo.vike.io/polymarket-smart-money/](https://demo.vike.io/polymarket-smart-money/) | Vike: `vike.io/mcp` → `polymarket_smart_money` | ✅ live |
 
 ## Architecture
 
