@@ -1,5 +1,6 @@
-"""Verify the umbrella build produces a working binance-tracker case."""
+"""Verify the umbrella build produces the new 2-page binance-tracker case."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -14,52 +15,52 @@ def test_discover_includes_binance_tracker():
     assert "binance-tracker" in slugs
 
 
-def test_build_produces_index_for_binance_tracker():
+def test_build_produces_index_and_trade_for_binance_tracker():
     build.DIST.mkdir(exist_ok=True)
     case = next(c for c in build.discover_cases() if c["slug"] == "binance-tracker")
     build.build_case(case)
 
-    out = build.DIST / "binance-tracker" / "index.html"
-    assert out.exists()
-    html = out.read_text(encoding="utf-8")
+    out_dir = build.DIST / "binance-tracker"
+    index = (out_dir / "index.html").read_text(encoding="utf-8")
+    trade = (out_dir / "trade.html").read_text(encoding="utf-8")
 
-    # API prefix substituted with the slug.
-    assert 'const API = "/api/binance-tracker"' in html
+    # Index: markets list with SPOT/PERP toggle.
+    assert "Binance Tracker" in index
+    assert 'id="mode-tabs"' in index
+    assert 'data-mode="spot"' in index and 'data-mode="perp"' in index
+    assert "loadMarkets" in index
+    assert "./trade.html?symbol=" in index  # built dynamically in JS
+    # Funding column is hidden by default but present in the header markup.
+    assert "Funding" in index
+    # Binance yellow accent + dark palette.
+    assert "#f0b90b" in index
+    assert "#0d1421" in index
 
-    # Brand + symbol substituted.
-    assert "Binance Tracker" in html
-    assert '"BTCUSDT"' in html
-
-    # Intervals list substituted as JSON.
-    assert '"1m"' in html and '"1h"' in html and '"1d"' in html
-
-    # Skeleton checks: candle chart, order book, trades, symbol picker.
-    assert 'id="chart"' in html
-    assert 'id="symbol"' in html
-    assert 'id="asks"' in html and 'id="bids"' in html
-    assert 'id="trades"' in html
-    assert 'id="spread"' in html
-    assert "CandlestickSeries" in html
-    assert "HistogramSeries" in html
-
-    # Theme + dark palette + Binance yellow accent.
-    assert "#0d1421" in html  # bg
-    assert "#f0b90b" in html  # binance accent
-
-    # Polling logic present.
-    assert "startPolling" in html and "stopPolling" in html
-
-    # Markets table below the chart with click-to-switch.
-    assert 'id="pairs-tbody"' in html
-    assert "renderPairs" in html
-    assert "Markets · USDT" in html
+    # Trade: chart + book + trades + symbol picker + mode pill.
+    assert 'id="chart"' in trade
+    assert 'id="symbol"' in trade
+    assert 'id="asks"' in trade and 'id="bids"' in trade
+    assert 'id="trades"' in trade
+    assert 'id="mode-pill"' in trade
+    assert "CandlestickSeries" in trade and "HistogramSeries" in trade
+    # Perp-only stats present (hidden until mode=perp).
+    assert 'id="s-funding"' in trade
+    assert 'id="s-mark"' in trade
+    assert 'id="s-oi"' in trade
+    assert "loadFundingPerp" in trade
+    # API base substituted with slug; mode is appended at call time.
+    assert 'API_BASE = "/api/binance-tracker"' in trade
 
 
-def test_routing_manifest_includes_binance_tracker_with_no_key():
+def test_routing_manifest_has_per_mode_upstreams_for_binance():
     cases = build.discover_cases()
     build.write_routing_manifest(cases)
-    import json
     routes = json.loads((build.DIST / "manifest.json").read_text())["routes"]
     bt = next(r for r in routes if r["slug"] == "binance-tracker")
-    assert bt["upstream_base"] == "https://api.binance.com/api/v3"
-    assert "api_key_env" not in bt  # Binance public is keyless
+
+    # Binance now declares two upstreams keyed by mode.
+    assert "upstreams" in bt
+    assert bt["upstreams"]["spot"]["base"] == "https://api.binance.com/api/v3"
+    assert bt["upstreams"]["perp"]["base"] == "https://fapi.binance.com/fapi/v1"
+    # No api key needed for Binance public endpoints.
+    assert "api_key_env" not in bt

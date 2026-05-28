@@ -45,11 +45,29 @@ async function proxy(url, env) {
     return jsonError(500, "routing manifest unavailable", String(e));
   }
   const route = table[slug];
-  if (!route || !route.upstream_base) {
-    return jsonError(404, `unknown case: ${slug}`);
+  if (!route) return jsonError(404, `unknown case: ${slug}`);
+
+  // Resolve the upstream base. Cases can declare either:
+  //   route.upstream_base (single host) → use rest directly
+  //   route.upstreams (per-mode hosts)   → first segment of rest is the mode
+  let base;
+  let upstreamPath;
+  if (route.upstreams) {
+    const restSlash = rest.indexOf("/");
+    const mode = restSlash === -1 ? rest : rest.slice(0, restSlash);
+    const tail = restSlash === -1 ? "" : rest.slice(restSlash + 1);
+    const modeCfg = route.upstreams[mode];
+    if (!modeCfg) return jsonError(404, `unknown mode for ${slug}: ${mode || "(none)"}`);
+    base = modeCfg.base;
+    upstreamPath = tail;
+  } else if (route.upstream_base) {
+    base = route.upstream_base;
+    upstreamPath = rest;
+  } else {
+    return jsonError(500, `case ${slug} has no upstream configured`);
   }
 
-  const upstream = `${route.upstream_base}/${rest}${url.search}`;
+  const upstream = `${base}/${upstreamPath}${url.search}`;
   const headers = { accept: "application/json" };
   if (route.api_key_env && route.api_key_header && env[route.api_key_env]) {
     headers[route.api_key_header] = env[route.api_key_env];

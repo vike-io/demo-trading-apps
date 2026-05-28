@@ -134,8 +134,17 @@ def write_routing_manifest(cases: list[dict]) -> None:
         route: dict = {
             "slug": c["slug"],
             "name": c.get("name", c["slug"]),
-            "upstream_base": c.get("upstream_base"),
         }
+        # Two ways to declare upstreams in a manifest:
+        #   - upstream_base: "https://..."             (single host)
+        #   - upstreams: { spot: { base: "..." },      (multiple modes;
+        #                  perp: { base: "..." } }      first path segment after slug is the mode)
+        if c.get("upstreams"):
+            route["upstreams"] = {
+                mode: {"base": cfg["base"]} for mode, cfg in c["upstreams"].items()
+            }
+        elif c.get("upstream_base"):
+            route["upstream_base"] = c["upstream_base"]
         if c.get("api_key_env") and c.get("api_key_header"):
             route["api_key_env"] = c["api_key_env"]
             route["api_key_header"] = c["api_key_header"]

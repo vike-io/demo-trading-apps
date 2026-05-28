@@ -71,16 +71,33 @@ class Handler(SimpleHTTPRequestHandler):
         if not sep:
             tail = ""
         route = ROUTES.get(slug)
-        if not route or not route.get("upstream_base"):
+        if not route:
             self._json(404, {"error": f"unknown case: {slug!r}"})
+            return
+
+        # Resolve upstream base. Single-host cases declare upstream_base;
+        # multi-mode cases declare upstreams keyed by mode (the first
+        # segment of `tail` after the slug).
+        if route.get("upstreams"):
+            mode, _, tail2 = tail.partition("/")
+            mode_cfg = route["upstreams"].get(mode)
+            if not mode_cfg:
+                self._json(404, {"error": f"unknown mode for {slug!r}: {mode or '(none)'}"})
+                return
+            upstream_base = mode_cfg["base"]
+            tail = tail2
+        elif route.get("upstream_base"):
+            upstream_base = route["upstream_base"]
+        else:
+            self._json(500, {"error": f"case {slug!r} has no upstream configured"})
             return
 
         # Split tail into path and query.
         if "?" in tail:
             path, _, query = tail.partition("?")
-            upstream = f"{route['upstream_base']}/{quote(path, safe='/')}?{query}"
+            upstream = f"{upstream_base}/{quote(path, safe='/')}?{query}"
         else:
-            upstream = f"{route['upstream_base']}/{quote(tail, safe='/')}"
+            upstream = f"{upstream_base}/{quote(tail, safe='/')}"
 
         req = urllib.request.Request(upstream)
         req.add_header("accept", "application/json")
