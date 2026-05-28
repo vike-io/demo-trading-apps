@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}}</title>
+  <script src="https://unpkg.com/lightweight-charts@5.0.8/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg: #0d1421;
+      --panel: #171b26;
+      --border: #222531;
+      --text: #e9edf3;
+      --mute: #8a93a6;
+      --green: #16c784;
+      --red: #ea3943;
+      --accent: #5c7cfa;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.18s, color 0.18s;
+    }
+    .theme-toggle {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+    header.top .header-controls { display: flex; gap: 10px; align-items: center; }
+    #currency {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    header.top .brand-link {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text); font-weight: 700; font-size: 16px;
+    }
+    header.top .brand-link::before { content: "←"; color: var(--mute); }
+
+    #error {
+      margin: 12px 24px 0; padding: 10px 14px;
+      background: rgba(234,57,67,0.12);
+      border: 1px solid var(--red);
+      border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #error[hidden] { display: none; }
+    #error button {
+      background: var(--red); color: #fff; border: none;
+      padding: 6px 12px; border-radius: 4px; cursor: pointer;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+      aside.stats { position: static !important; }
+    }
+
+    section.chart-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .coin-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .coin-head img { width: 32px; height: 32px; border-radius: 50%; }
+    .coin-head .name { font-size: 20px; font-weight: 700; }
+    .coin-head .sym {
+      background: var(--bg);
+      color: var(--mute);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .coin-head .rank {
+      margin-left: auto;
+      background: var(--bg);
+      color: var(--mute);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .price-row {
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .price-row .big-price {
+      font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .price-row .delta {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .price-row .delta.up { background: rgba(22,199,132,0.15); color: var(--green); }
+    .price-row .delta.down { background: rgba(234,57,67,0.15); color: var(--red); }
+
+    .timeframes {
+      display: inline-flex; gap: 4px;
+      margin-bottom: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px;
+    }
+    .timeframes button {
+      background: transparent;
+      color: var(--mute);
+      border: none;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .timeframes button.active {
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    .chart-wrap { position: relative; height: 360px; }
+    #chart { width: 100%; height: 100%; }
+    #chart-error { color: var(--mute); text-align: center; margin: 150px 0; }
+    #chart-error[hidden] { display: none; }
+
+    aside.stats {
+      position: sticky;
+      top: 70px;
+      align-self: start;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    aside.stats h2 {
+      margin: 0 0 14px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    aside.stats h3 {
+      margin: 18px 0 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--mute);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    aside.stats dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      row-gap: 10px;
+      column-gap: 12px;
+      align-items: center;
+    }
+    aside.stats dt { color: var(--mute); font-size: 12px; }
+    aside.stats dd {
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      text-align: right;
+    }
+    aside.stats dd small { display: block; color: var(--mute); font-size: 10px; }
+    aside.stats dd .delta { font-size: 11px; }
+    aside.stats .up { color: var(--green); }
+    aside.stats .down { color: var(--red); }
+    aside.stats hr {
+      border: none; border-top: 1px solid var(--border); margin: 16px 0;
+    }
+
+    section.about {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto 24px;
+      box-sizing: border-box;
+    }
+    section.about-wrap { padding: 0 24px; }
+    section.about h2 { margin: 0 0 12px; font-size: 18px; }
+    section.about .desc {
+      color: var(--text);
+      max-height: 220px;
+      overflow: hidden;
+      position: relative;
+      transition: max-height 0.3s;
+    }
+    section.about .desc.expanded { max-height: none; }
+    section.about .desc::after {
+      content: "";
+      position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+      background: linear-gradient(to bottom, transparent, var(--panel));
+      pointer-events: none;
+    }
+    section.about .desc.expanded::after { display: none; }
+    section.about .desc a { color: var(--accent); }
+    section.about .desc p { margin: 0 0 10px; }
+    section.about .read-more {
+      background: transparent;
+      color: var(--accent);
+      border: none;
+      padding: 6px 0;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    section.about .read-more:hover { text-decoration: underline; }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    .chip.link {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 0%, #2a2e3a 50%, var(--border) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+      color: transparent;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+  <script>
+    (function () {
+      document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark';
+    })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand-link" href="./index.html">{{brand_name}}</a>
+    <div class="header-controls">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+      <select id="currency"></select>
+    </div>
+  </header>
+
+  <div id="error" hidden>
+    <span id="error-message"></span>
+    <button id="retry" type="button">Retry</button>
+  </div>
+
+  <main>
+    <section class="chart-panel">
+      <div class="coin-head">
+        <img id="coin-img" src="" alt="" hidden>
+        <span class="name skeleton" id="coin-name">Loading…</span>
+        <span class="sym" id="coin-sym"></span>
+        <span class="rank" id="coin-rank"></span>
+      </div>
+      <div class="price-row">
+        <span class="big-price skeleton" id="big-price">—</span>
+        <span class="delta" id="big-delta"></span>
+      </div>
+      <div class="timeframes" id="timeframes">
+        <button data-days="1">1D</button>
+        <button data-days="7">7D</button>
+        <button data-days="30" class="active">1M</button>
+        <button data-days="90">3M</button>
+        <button data-days="365">1Y</button>
+        <button data-days="max">MAX</button>
+      </div>
+      <div class="chart-wrap">
+        <div id="chart"></div>
+        <p id="chart-error" hidden>Could not load chart.</p>
+      </div>
+    </section>
+
+    <aside class="stats">
+      <h2 id="stats-heading">Price Statistics</h2>
+      <dl id="stats-today">
+        <dt>Price</dt>            <dd id="s-price">—</dd>
+        <dt>24h Change</dt>       <dd id="s-change24">—</dd>
+        <dt>24h Low / High</dt>   <dd id="s-lowhigh">—</dd>
+        <dt>24h Volume</dt>       <dd id="s-volume">—</dd>
+        <dt>Volume / Mkt Cap</dt> <dd id="s-volmcap">—</dd>
+        <dt>Market Rank</dt>      <dd id="s-rank">—</dd>
+      </dl>
+
+      <h3>Market Cap</h3>
+      <dl>
+        <dt>Market Cap</dt>          <dd id="s-mcap">—</dd>
+        <dt>Fully Diluted Mkt Cap</dt> <dd id="s-fdv">—</dd>
+      </dl>
+
+      <h3>Price History</h3>
+      <dl>
+        <dt>All-Time High</dt> <dd id="s-ath">—</dd>
+        <dt>All-Time Low</dt>  <dd id="s-atl">—</dd>
+      </dl>
+
+      <h3>Supply</h3>
+      <dl>
+        <dt>Circulating</dt> <dd id="s-circ">—</dd>
+        <dt>Total</dt>       <dd id="s-total">—</dd>
+        <dt>Max</dt>         <dd id="s-max">—</dd>
+      </dl>
+    </aside>
+  </main>
+
+  <div class="about-wrap">
+    <section class="about">
+      <h2 id="about-heading">About</h2>
+      <div class="desc" id="desc">
+        <p class="skeleton">Loading description…</p>
+      </div>
+      <button class="read-more" id="read-more" hidden>Read more</button>
+      <div class="chip-row" id="categories"></div>
+      <div class="chip-row" id="links"></div>
+    </section>
+  </div>
+
+  <script>
+    const CONFIG = {
+      defaultCurrency: "{{default_currency}}",
+      currencyList: {{currency_list_json}}
+    };
+
+    const API = "/api";
+    const params = new URLSearchParams(location.search);
+    const coinId = params.get("id");
+
+    const state = {
+      currency: CONFIG.defaultCurrency,
+      coin: null,
+      days: 30,
+      chart: null,
+      priceSeries: null,
+      volumeSeries: null,
+      chartCache: {}  // key: `${days}-${currency}` -> { prices, volumes }
+    };
+    let lastAction = null;
+
+    const $ = sel => document.querySelector(sel);
+
+    function fmt(n, currency, max = 2) {
+      if (n == null) return "—";
+      const opts = n < 1 && n > 0 ? { maximumFractionDigits: 6 } : { maximumFractionDigits: max };
+      return new Intl.NumberFormat("en-US", opts).format(n) + " " + currency.toUpperCase();
+    }
+    function fmtBig(n, currency) {
+      if (n == null) return "—";
+      const suf = (v, s) => fmt(v, currency, 2).replace(/\s\w+$/, "") + s + " " + currency.toUpperCase();
+      if (n >= 1e12) return suf(n / 1e12, "T");
+      if (n >= 1e9)  return suf(n / 1e9,  "B");
+      if (n >= 1e6)  return suf(n / 1e6,  "M");
+      return fmt(n, currency);
+    }
+    function fmtPct(n) {
+      if (n == null) return "";
+      return (n >= 0 ? "▲ " : "▼ ") + Math.abs(n).toFixed(2) + " %";
+    }
+    function fmtPlainBig(n) {
+      if (n == null) return "—";
+      if (n >= 1e12) return (n/1e12).toFixed(2) + "T";
+      if (n >= 1e9)  return (n/1e9).toFixed(2)  + "B";
+      if (n >= 1e6)  return (n/1e6).toFixed(2)  + "M";
+      return new Intl.NumberFormat("en-US").format(n);
+    }
+    function dateAgo(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      const days = (Date.now() - d.getTime()) / 86400000;
+      if (days > 730) return Math.round(days/365) + " years ago";
+      if (days > 60)  return Math.round(days/30)  + " months ago";
+      if (days > 1)   return Math.round(days)     + " days ago";
+      return "today";
+    }
+
+    function showError(msg) {
+      $("#error-message").textContent = msg;
+      $("#error").hidden = false;
+    }
+    function hideError() { $("#error").hidden = true; }
+
+    async function runAction(fn) {
+      lastAction = fn;
+      hideError();
+      try {
+        await fn();
+      } catch (err) {
+        console.error(err);
+        showError(
+          String(err).includes("429")
+            ? "CoinGecko rate-limited. Try again in about a minute."
+            : "Could not reach CoinGecko. Check your connection."
+        );
+      }
+    }
+
+    async function fetchCoin() {
+      const url = `${API}/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+      state.coin = await res.json();
+      renderHeader();
+      renderStats();
+      renderAbout();
+    }
+
+    function renderHeader() {
+      const c = state.coin;
+      document.title = `${c.name} (${c.symbol.toUpperCase()}) — {{brand_name}}`;
+      const img = $("#coin-img");
+      img.src = c.image && (c.image.large || c.image.small || c.image.thumb) || "";
+      img.alt = c.name;
+      img.hidden = !img.src;
+      $("#coin-name").textContent = c.name;
+      $("#coin-name").classList.remove("skeleton");
+      $("#coin-sym").textContent = c.symbol;
+      const rank = c.market_cap_rank;
+      $("#coin-rank").textContent = rank ? `Rank #${rank}` : "";
+      const price = c.market_data?.current_price?.[state.currency];
+      $("#big-price").textContent = fmt(price, state.currency);
+      $("#big-price").classList.remove("skeleton");
+      const pct = c.market_data?.price_change_percentage_24h;
+      const deltaEl = $("#big-delta");
+      deltaEl.textContent = pct == null ? "" : fmtPct(pct);
+      deltaEl.className = "delta " + (pct >= 0 ? "up" : "down");
+      $("#stats-heading").textContent = `${c.symbol.toUpperCase()} Price Statistics`;
+      $("#about-heading").textContent = `What is ${c.name}?`;
+    }
+
+    function renderStats() {
+      const c = state.coin;
+      const md = c.market_data || {};
+      const ccy = state.currency;
+      const get = obj => (obj && obj[ccy] != null) ? obj[ccy] : null;
+
+      $("#s-price").textContent = fmt(get(md.current_price), ccy);
+      const pct24 = (md.price_change_percentage_24h_in_currency || {})[ccy] ?? md.price_change_percentage_24h;
+      const change24 = get(md.price_change_24h_in_currency);
+      $("#s-change24").innerHTML = change24 == null
+        ? "—"
+        : `${fmt(change24, ccy)} <small class="delta ${pct24 >= 0 ? 'up' : 'down'}">${fmtPct(pct24)}</small>`;
+
+      const low = get(md.low_24h), high = get(md.high_24h);
+      $("#s-lowhigh").textContent = (low != null && high != null) ? `${fmt(low, ccy)} / ${fmt(high, ccy)}` : "—";
+
+      $("#s-volume").textContent = fmtBig(get(md.total_volume), ccy);
+      const mcap = get(md.market_cap), vol = get(md.total_volume);
+      $("#s-volmcap").textContent = (mcap && vol) ? (vol / mcap).toFixed(5) : "—";
+      $("#s-rank").textContent = c.market_cap_rank ? `#${c.market_cap_rank}` : "—";
+
+      const mcapPct = md.market_cap_change_percentage_24h;
+      $("#s-mcap").innerHTML = mcap == null
+        ? "—"
+        : `${fmtBig(mcap, ccy)} <small class="delta ${mcapPct >= 0 ? 'up' : 'down'}">${fmtPct(mcapPct)}</small>`;
+      $("#s-fdv").textContent = fmtBig(get(md.fully_diluted_valuation), ccy);
+
+      const ath = get(md.ath), athPct = (md.ath_change_percentage || {})[ccy];
+      $("#s-ath").innerHTML = ath == null ? "—" :
+        `${fmt(ath, ccy)} <small>${dateAgo((md.ath_date || {})[ccy])}</small>` +
+        (athPct != null ? `<small class="delta ${athPct >= 0 ? 'up' : 'down'}">${fmtPct(athPct)}</small>` : "");
+
+      const atl = get(md.atl), atlPct = (md.atl_change_percentage || {})[ccy];
+      $("#s-atl").innerHTML = atl == null ? "—" :
+        `${fmt(atl, ccy)} <small>${dateAgo((md.atl_date || {})[ccy])}</small>` +
+        (atlPct != null ? `<small class="delta ${atlPct >= 0 ? 'up' : 'down'}">${fmtPct(atlPct)}</small>` : "");
+
+      $("#s-circ").textContent  = fmtPlainBig(md.circulating_supply);
+      $("#s-total").textContent = fmtPlainBig(md.total_supply);
+      $("#s-max").textContent   = fmtPlainBig(md.max_supply);
+    }
+
+    function renderAbout() {
+      const c = state.coin;
+      const desc = (c.description && c.description.en) || "";
+      const descEl = $("#desc");
+      if (desc.trim()) {
+        descEl.innerHTML = desc.split(/\n+/).map(p => `<p>${p}</p>`).join("");
+        $("#read-more").hidden = false;
+      } else {
+        descEl.innerHTML = `<p>No description available.</p>`;
+      }
+
+      // Drop fund/index/holdings labels — they're investment products, not real categorization.
+      const JUNK = /\b(portfolio|index|holdings)\b/i;
+      const cats = (c.categories || []).filter(s => s && !JUNK.test(s));
+      $("#categories").innerHTML = cats.map(cat => `<span class="chip">${escapeHtml(cat)}</span>`).join("");
+
+      const links = c.links || {};
+      const linkChips = [];
+      const home = (links.homepage || [])[0];
+      if (home) linkChips.push(linkChip("Website", home));
+      const wp = links.whitepaper;
+      if (wp) linkChips.push(linkChip("Whitepaper", wp));
+      const explorer = (links.blockchain_site || []).find(Boolean);
+      if (explorer) linkChips.push(linkChip("Explorer", explorer));
+      const tw = links.twitter_screen_name;
+      if (tw) linkChips.push(linkChip("Twitter", `https://x.com/${tw}`));
+      const reddit = links.subreddit_url;
+      if (reddit) linkChips.push(linkChip("Reddit", reddit));
+      const tg = links.telegram_channel_identifier;
+      if (tg) linkChips.push(linkChip("Telegram", `https://t.me/${tg}`));
+      const github = (links.repos_url && links.repos_url.github || [])[0];
+      if (github) linkChips.push(linkChip("GitHub", github));
+      $("#links").innerHTML = linkChips.join("");
+    }
+
+    function linkChip(label, href) {
+      return `<a class="chip link" href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    async function fetchChart(days) {
+      const cacheKey = `${days}-${state.currency}`;
+      if (state.chartCache[cacheKey]) {
+        renderChart(state.chartCache[cacheKey]);
+        return;
+      }
+      const url = `${API}/coins/${coinId}/market_chart?vs_currency=${state.currency}&days=${days}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+      const data = await res.json();
+      const payload = { prices: data.prices, volumes: data.total_volumes };
+      state.chartCache[cacheKey] = payload;
+      renderChart(payload);
+    }
+
+    function renderChart({ prices, volumes }) {
+      const container = $("#chart");
+      const errEl = $("#chart-error");
+      if (state.chart) { state.chart.remove(); state.chart = null; state.priceSeries = null; state.volumeSeries = null; }
+      container.innerHTML = "";
+      if (!prices || !prices.length) { container.hidden = true; errEl.hidden = false; return; }
+      container.hidden = false; errEl.hidden = true;
+
+      const th = chartTheme();
+      state.chart = LightweightCharts.createChart(container, {
+        autoSize: true,
+        layout: { background: { color: th.panel }, textColor: th.text, fontSize: 11 },
+        grid: { vertLines: { color: th.grid }, horzLines: { color: th.grid } },
+        rightPriceScale: { borderColor: th.border, scaleMargins: { top: 0.1, bottom: 0.25 } },
+        timeScale: { borderColor: th.border, timeVisible: state.days <= 7 },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+      });
+
+      const baseValue = prices[0][1];
+      state.priceSeries = state.chart.addSeries(LightweightCharts.BaselineSeries, {
+        baseValue: { type: "price", price: baseValue },
+        topLineColor: "#16c784",
+        topFillColor1: "rgba(22,199,132,0.28)",
+        topFillColor2: "rgba(22,199,132,0.02)",
+        bottomLineColor: "#ea3943",
+        bottomFillColor1: "rgba(234,57,67,0.02)",
+        bottomFillColor2: "rgba(234,57,67,0.28)",
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
+      });
+      state.priceSeries.setData(prices.map(([ts, v]) => ({ time: Math.floor(ts/1000), value: v })));
+
+      if (volumes && volumes.length) {
+        state.volumeSeries = state.chart.addSeries(LightweightCharts.HistogramSeries, {
+          color: "rgba(92,124,250,0.5)",
+          priceFormat: { type: "volume" },
+          priceScaleId: "volume",
+          lastValueVisible: false
+        });
+        state.chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+        state.volumeSeries.setData(volumes.map(([ts, v]) => ({ time: Math.floor(ts/1000), value: v })));
+      }
+      state.chart.timeScale().fitContent();
+    }
+
+    function populateCurrencyDropdown() {
+      const sel = $("#currency");
+      sel.innerHTML = CONFIG.currencyList
+        .map(c => `<option value="${c}"${c === state.currency ? " selected" : ""}>${c.toUpperCase()}</option>`)
+        .join("");
+    }
+
+    function chartTheme() {
+      const light = document.documentElement.dataset.theme === "light";
+      return {
+        panel: light ? "#ffffff" : "#171b26",
+        text:  light ? "#64748b" : "#8a93a6",
+        grid:  light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.04)",
+        border: light ? "#e2e8f0" : "#222531"
+      };
+    }
+
+    function applyTheme(t) {
+      document.documentElement.dataset.theme = t;
+      localStorage.setItem("cg-theme", t);
+      $("#theme-toggle").textContent = t === "light" ? "🌙" : "☀️";
+      // Live chart restyle: pull cached data for the active timeframe and re-render.
+      const cacheKey = `${state.days}-${state.currency}`;
+      if (state.chart && state.chartCache[cacheKey]) {
+        renderChart(state.chartCache[cacheKey]);
+      }
+    }
+
+    function bindEvents() {
+      $("#currency").addEventListener("change", e => {
+        state.currency = e.target.value;
+        state.chartCache = {};
+        runAction(async () => { await fetchCoin(); await fetchChart(state.days); });
+      });
+      $("#timeframes").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-days]");
+        if (!btn) return;
+        $("#timeframes button.active")?.classList.remove("active");
+        btn.classList.add("active");
+        state.days = btn.dataset.days;
+        runAction(() => fetchChart(state.days));
+      });
+      $("#read-more").addEventListener("click", () => {
+        const d = $("#desc");
+        d.classList.toggle("expanded");
+        $("#read-more").textContent = d.classList.contains("expanded") ? "Show less" : "Read more";
+      });
+      $("#retry").addEventListener("click", () => { if (lastAction) runAction(lastAction); });
+      $("#theme-toggle").addEventListener("click", () => {
+        applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+      });
+      applyTheme(document.documentElement.dataset.theme);
+    }
+
+    if (!coinId) {
+      showError("No coin specified. Go back and pick one.");
+    } else {
+      populateCurrencyDropdown();
+      bindEvents();
+      runAction(async () => { await fetchCoin(); await fetchChart(state.days); });
+    }
+  </script>
+</body>
+</html>

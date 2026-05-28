@@ -1,0 +1,27 @@
+# Patterns apply everywhere — root and nested cases (foo/, bar/, ...)
+
+# Build output
+**/dist/
+
+# Python
+**/__pycache__/
+*.pyc
+**/.venv/
+**/.pytest_cache/
+
+# Secrets — never commit
+**/.env
+.dev.vars
+
+# Planning / scratch — local only
+**/docs/
+**/tmp/
+*.png
+
+# Cloudflare Wrangler
+**/.wrangler/
+**/node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
