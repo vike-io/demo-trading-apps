@@ -95,6 +95,65 @@
     td.market a { color: var(--text); font-weight: 600; }
     td.market a:hover { color: var(--accent); text-decoration: none; }
     td.market .last-ts { color: var(--mute); font-size: 11px; margin-top: 2px; }
+    td.expand { width: 24px; text-align: center; color: var(--mute); cursor: pointer; user-select: none; transition: color 0.15s; }
+    tbody tr.parent { cursor: pointer; }
+    tbody tr.parent:hover td.expand { color: var(--accent); }
+    tbody tr.parent.open td.expand { color: var(--accent); }
+    tbody tr.detail > td { padding: 0; background: rgba(99,102,241,0.04); border-bottom: 1px solid var(--border); }
+    .detail-inner { padding: 16px 20px; }
+    .detail-inner.loading { color: var(--mute); font-size: 12px; padding: 14px 20px; }
+    .detail-inner.err { color: var(--red); font-size: 12px; padding: 14px 20px; }
+
+    .detail-head {
+      display: flex; flex-wrap: wrap; gap: 18px; align-items: baseline;
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-head .stat { font-size: 12px; }
+    .detail-head .stat .label { color: var(--mute); margin-right: 6px; text-transform: uppercase; letter-spacing: 0.4px; font-size: 10px; }
+    .detail-head .stat .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .detail-head .stat .value.yes { color: var(--green); }
+    .detail-head .stat .value.no { color: var(--red); }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 800px) { .detail-grid { grid-template-columns: 1fr; } }
+    .holders-section h3 {
+      margin: 0 0 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--mute);
+    }
+    .holders-section h3.yes { color: var(--green); }
+    .holders-section h3.no { color: var(--red); }
+    .holders-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .holders-table th { color: var(--mute); font-size: 10px; font-weight: 500; text-align: left; padding: 4px 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .holders-table th.num { text-align: right; }
+    .holders-table td { padding: 6px 8px; border-top: 1px solid var(--border); }
+    .holders-table td.num { text-align: right; }
+    .holders-table .wallet { color: var(--text); font-weight: 600; }
+    .holders-table .pseudo { color: var(--mute); font-size: 10px; margin-left: 4px; }
+    .holders-table .ts { color: var(--mute); font-size: 10px; }
+    .holders-table .empty { color: var(--mute); padding: 12px 8px; text-align: center; font-style: italic; }
+
+    .trades-section { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .trades-section h3 {
+      margin: 0 0 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--mute);
+    }
+    .trades-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+    .trades-table th { color: var(--mute); font-size: 10px; font-weight: 500; text-align: left; padding: 4px 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .trades-table th.num { text-align: right; }
+    .trades-table td { padding: 5px 8px; border-top: 1px solid var(--border); }
+    .trades-table td.num { text-align: right; }
+    .trades-table tr.buy .side { color: var(--green); }
+    .trades-table tr.sell .side { color: var(--red); }
+    .trades-table tr.buy.yes .side::before { content: "▲ "; }
+    .trades-table .tx a { color: var(--mute); font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 10px; }
+    .trades-table .tx a:hover { color: var(--accent); }
     td.up { color: var(--green); }
     td.down { color: var(--red); }
     td.net.big { font-weight: 700; }
@@ -242,6 +301,7 @@
           <th class="num">Sell</th>
           <th class="num">Trades</th>
           <th class="num">Last activity</th>
+          <th class="expand"></th>
         `;
       } else {
         thead.innerHTML = `
@@ -252,6 +312,7 @@
           <th class="num">Current mid</th>
           <th class="num">Edge</th>
           <th class="num">Last activity</th>
+          <th class="expand"></th>
         `;
       }
     }
@@ -262,17 +323,19 @@
         tbody.innerHTML = `<tr class="empty-row"><td colspan="8">No signals match these filters.</td></tr>`;
         return;
       }
+      const colspan = state.mode === "flows" ? 9 : 8;
       tbody.innerHTML = state.rows.map((r, i) => {
         const polyUrl = `https://polymarket.com/event/${r.slug}`;
         const titleCell = `
           <td class="market">
-            <a href="${polyUrl}" target="_blank" rel="noopener noreferrer">${r.title || r.slug || "—"}</a>
+            <a href="${polyUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${r.title || r.slug || "—"}</a>
             <div class="last-ts">${r.slug ? r.slug : ""}</div>
           </td>`;
+        let body;
         if (state.mode === "flows") {
           const netCls = r.net_inflow >= 0 ? "up" : "down";
           const big = Math.abs(r.net_inflow) >= 25000 ? " big" : "";
-          return `<tr>
+          body = `
             <td class="rank">${i + 1}</td>
             ${titleCell}
             <td class="num">${fmtInt(r.smart_wallets)}</td>
@@ -281,12 +344,11 @@
             <td class="num down">${fmtUsd(r.sell_outflow)}</td>
             <td class="num">${fmtInt(r.trades)}</td>
             <td class="num">${fmtTime(r.last_ts)}</td>
-          </tr>`;
+          `;
         } else {
-          // mispricings shape: cohort_avg_price, current_mid, edge_bps (best-effort field names)
           const edge = r.edge_bps != null ? r.edge_bps : null;
           const edgeCls = edge != null && edge >= 0 ? "up" : "down";
-          return `<tr>
+          body = `
             <td class="rank">${i + 1}</td>
             ${titleCell}
             <td class="num">${fmtInt(r.smart_wallets)}</td>
@@ -294,9 +356,171 @@
             <td class="num midprice"><span class="price">${fmtMid(r.current_mid ?? r.yes_mid)}</span></td>
             <td class="num ${edgeCls}">${edge != null ? (edge >= 0 ? "+" : "") + edge.toFixed(0) + " bps" : "—"}</td>
             <td class="num">${fmtTime(r.last_ts)}</td>
-          </tr>`;
+          `;
         }
+        return `
+          <tr class="parent" data-condition-id="${r.condition_id}">
+            ${body}
+            <td class="expand" title="Click to see who the smart money is">▾</td>
+          </tr>
+          <tr class="detail" data-detail-for="${r.condition_id}" hidden>
+            <td colspan="${colspan}"><div class="detail-inner"></div></td>
+          </tr>
+        `;
       }).join("");
+    }
+
+    // ----- expand-on-click: market_detail with top holders + recent trades -----
+    const detailCache = new Map();
+
+    async function fetchMarketDetail(conditionId) {
+      if (detailCache.has(conditionId)) return detailCache.get(conditionId);
+      const res = await fetch(VIKE_MCP, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 1, method: "tools/call",
+          params: { name: "polymarket_market_detail", arguments: { condition_id: conditionId } }
+        })
+      });
+      if (!res.ok) throw new Error(`Vike proxy ${res.status}`);
+      const env = await res.json();
+      if (env.error) throw new Error(`Vike: ${env.error.message || env.error.code}`);
+      const text = env.result?.content?.[0]?.text;
+      if (!text) throw new Error("Vike returned no content");
+      const parsed = JSON.parse(text);
+      detailCache.set(conditionId, parsed);
+      return parsed;
+    }
+
+    function shortAddr(a) {
+      if (!a) return "—";
+      return a.slice(0, 6) + "…" + a.slice(-4);
+    }
+
+    function renderHolders(holders, side) {
+      if (!holders || !holders.length) return `<div class="empty">No active ${side} positions among tracked wallets.</div>`;
+      // Sort by usd_spent desc.
+      const sorted = holders.slice().sort((a, b) => (b.usd_spent || 0) - (a.usd_spent || 0)).slice(0, 8);
+      const rows = sorted.map(h => {
+        const name = h.display_name || h.pseudonym || shortAddr(h.proxy_wallet);
+        const link = `https://polymarket.com/profile/${h.proxy_wallet}`;
+        return `<tr>
+          <td><a class="wallet" href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>${h.pseudonym && h.display_name && h.pseudonym !== h.display_name ? `<span class="pseudo">${h.pseudonym}</span>` : ""}</td>
+          <td class="num">${fmtUsd(h.usd_spent)}</td>
+          <td class="num">${fmtInt(h.net_shares)}</td>
+          <td class="num"><span class="ts">${fmtTime(h.last_ts)}</span></td>
+        </tr>`;
+      }).join("");
+      return `<table class="holders-table">
+        <thead><tr><th>Wallet</th><th class="num">USD spent</th><th class="num">Shares</th><th class="num">Last</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    function renderTrades(trades) {
+      if (!trades || !trades.length) return "";
+      const top = trades.slice(0, 20);
+      const rows = top.map(t => {
+        const name = t.display_name || t.pseudonym || shortAddr(t.proxy_wallet);
+        const link = `https://polymarket.com/profile/${t.proxy_wallet}`;
+        const isBuy = (t.side || "").toUpperCase() === "BUY";
+        const cls = (isBuy ? "buy " : "sell ") + ((t.outcome || "").toLowerCase());
+        const tx = t.tx_hash
+          ? `<a href="https://polygonscan.com/tx/${t.tx_hash}" target="_blank" rel="noopener noreferrer">${t.tx_hash.slice(0,8)}…</a>`
+          : "—";
+        return `<tr class="${cls}">
+          <td>${fmtTime(t.ts)}</td>
+          <td><a class="wallet" href="${link}" target="_blank" rel="noopener noreferrer">${name}</a></td>
+          <td class="side">${t.outcome || "—"} ${t.side || ""}</td>
+          <td class="num">${fmtMid(t.price)}</td>
+          <td class="num">${fmtInt(t.size)}</td>
+          <td class="num">${fmtUsd(t.usd)}</td>
+          <td class="tx">${tx}</td>
+        </tr>`;
+      }).join("");
+      return `<div class="trades-section">
+        <h3>Recent trades (last ${top.length})</h3>
+        <table class="trades-table">
+          <thead><tr>
+            <th>When</th><th>Wallet</th><th>Side</th>
+            <th class="num">Price</th><th class="num">Size</th><th class="num">USD</th><th>Tx</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }
+
+    function renderDetail(detail) {
+      const stats = detail.stats || {};
+      const yesPrice = (detail.yes_series?.[detail.yes_series.length - 1]?.[1]) ?? null;
+      const noPrice = (detail.no_series?.[detail.no_series.length - 1]?.[1]) ?? null;
+      const head = `
+        <div class="detail-head">
+          <div class="stat"><span class="label">Status</span><span class="value">${detail.active ? "Active" : detail.closed ? "Closed" : "—"}</span></div>
+          <div class="stat"><span class="label">YES</span><span class="value yes">${fmtMid(yesPrice)}</span></div>
+          <div class="stat"><span class="label">NO</span><span class="value no">${fmtMid(noPrice)}</span></div>
+          <div class="stat"><span class="label">24h vol</span><span class="value">${fmtUsd(detail.volume_24h)}</span></div>
+          <div class="stat"><span class="label">Total vol</span><span class="value">${fmtUsd(detail.volume_total)}</span></div>
+          <div class="stat"><span class="label">Wallets</span><span class="value">${fmtInt(stats.wallets_n)}</span></div>
+          <div class="stat"><span class="label">Trades</span><span class="value">${fmtInt(stats.trades_n)}</span></div>
+        </div>`;
+      const grid = `
+        <div class="detail-grid">
+          <div class="holders-section">
+            <h3 class="yes">Top YES holders</h3>
+            ${renderHolders(detail.yes_holders, "YES")}
+          </div>
+          <div class="holders-section">
+            <h3 class="no">Top NO holders</h3>
+            ${renderHolders(detail.no_holders, "NO")}
+          </div>
+        </div>`;
+      return head + grid + renderTrades(detail.trades);
+    }
+
+    async function toggleExpand(conditionId, parentRow) {
+      const detailRow = document.querySelector(`tr.detail[data-detail-for="${conditionId}"]`);
+      if (!detailRow) return;
+      // Collapse if already open.
+      if (!detailRow.hidden) {
+        detailRow.hidden = true;
+        parentRow.classList.remove("open");
+        parentRow.querySelector(".expand").textContent = "▾";
+        return;
+      }
+      // Close any other open row.
+      document.querySelectorAll("tr.detail").forEach(r => { if (!r.hidden && r !== detailRow) r.hidden = true; });
+      document.querySelectorAll("tr.parent.open").forEach(r => {
+        if (r !== parentRow) {
+          r.classList.remove("open");
+          r.querySelector(".expand").textContent = "▾";
+        }
+      });
+      const inner = detailRow.querySelector(".detail-inner");
+      detailRow.hidden = false;
+      parentRow.classList.add("open");
+      parentRow.querySelector(".expand").textContent = "▴";
+      if (detailCache.has(conditionId)) {
+        inner.innerHTML = renderDetail(detailCache.get(conditionId));
+        inner.classList.remove("loading", "err");
+        return;
+      }
+      inner.innerHTML = "Fetching live holders + trade feed…";
+      inner.className = "detail-inner loading";
+      try {
+        const detail = await fetchMarketDetail(conditionId);
+        inner.innerHTML = renderDetail(detail);
+        inner.className = "detail-inner";
+      } catch (err) {
+        inner.className = "detail-inner err";
+        const msg = String(err);
+        if (msg.includes("not found")) {
+          inner.textContent = "This market has resolved — no live holder or trade feed available. Try one of the active markets above.";
+        } else {
+          inner.textContent = "Could not load detail — " + msg.slice(0, 160);
+        }
+      }
     }
 
     function applyMode(mode) {
@@ -315,6 +539,13 @@
     $("#mode-tabs").addEventListener("click", e => {
       const btn = e.target.closest("button[data-mode]");
       if (btn) applyMode(btn.dataset.mode);
+    });
+    $("#rows").addEventListener("click", e => {
+      // Ignore clicks on the market title link itself.
+      if (e.target.closest("a")) return;
+      const tr = e.target.closest("tr.parent[data-condition-id]");
+      if (!tr) return;
+      toggleExpand(tr.dataset.conditionId, tr);
     });
     $("#apply").addEventListener("click", () => runAction(loadSignals));
     $("#theme-toggle").addEventListener("click", () => {
