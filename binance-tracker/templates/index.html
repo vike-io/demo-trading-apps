@@ -89,8 +89,11 @@
       grid-template-columns: minmax(0, 1fr) 320px;
       gap: 12px;
       padding: 12px 20px 24px;
+      align-items: start;
     }
     @media (max-width: 920px) { main { grid-template-columns: 1fr; } }
+
+    .left-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
     section.chart-panel {
       background: var(--panel);
@@ -98,6 +101,35 @@
       border-radius: 10px;
       padding: 12px;
     }
+
+    section.markets {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    section.markets h3 {
+      margin: 0 0 8px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+      color: var(--mute);
+    }
+    table.pairs { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    table.pairs th {
+      text-align: left; font-weight: 500; font-size: 11px; color: var(--mute);
+      padding: 6px 10px; border-bottom: 1px solid var(--border);
+    }
+    table.pairs th.num { text-align: right; }
+    table.pairs tbody tr { cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    table.pairs tbody tr:last-child { border-bottom: none; }
+    table.pairs tbody tr:hover { background: rgba(240,185,11,0.06); }
+    table.pairs tbody tr.active { background: rgba(240,185,11,0.12); }
+    table.pairs td { padding: 7px 10px; font-size: 12px; }
+    table.pairs td.num { text-align: right; }
+    table.pairs td.sym { font-weight: 600; }
+    table.pairs td .base { color: var(--text); }
+    table.pairs td .quote { color: var(--mute); font-size: 10px; margin-left: 2px; }
+    table.pairs td.up { color: var(--green); }
+    table.pairs td.down { color: var(--red); }
     .timeframes {
       display: inline-flex; gap: 2px;
       background: var(--bg);
@@ -217,10 +249,27 @@
   </div>
 
   <main>
-    <section class="chart-panel">
-      <div class="timeframes" id="timeframes"></div>
-      <div id="chart"></div>
-    </section>
+    <div class="left-col">
+      <section class="chart-panel">
+        <div class="timeframes" id="timeframes"></div>
+        <div id="chart"></div>
+      </section>
+
+      <section class="markets">
+        <h3>Markets · USDT</h3>
+        <table class="pairs">
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th class="num">Last</th>
+              <th class="num">24h %</th>
+              <th class="num">24h Volume</th>
+            </tr>
+          </thead>
+          <tbody id="pairs-tbody"></tbody>
+        </table>
+      </section>
+    </div>
 
     <aside class="side">
       <div class="book">
@@ -454,7 +503,7 @@
       `).join("");
     }
 
-    // ---------- symbol picker ----------
+    // ---------- symbol picker + markets table ----------
     async function loadSymbols() {
       const url = `${API}/ticker/24hr`;
       const res = await fetch(url);
@@ -464,10 +513,32 @@
         .filter(r => r.symbol.endsWith("USDT") && Number(r.quoteVolume) > 0)
         .sort((a, b) => Number(b.quoteVolume) - Number(a.quoteVolume))
         .slice(0, CONFIG.topNPairs);
+      state.symbols = usdt;
+      renderPicker();
+      renderPairs();
+    }
+
+    function renderPicker() {
       const sel = $("#symbol");
-      sel.innerHTML = usdt.map(r =>
+      sel.innerHTML = state.symbols.map(r =>
         `<option value="${r.symbol}"${r.symbol === state.symbol ? " selected" : ""}>${r.symbol}</option>`
       ).join("");
+    }
+
+    function renderPairs() {
+      const tbody = $("#pairs-tbody");
+      tbody.innerHTML = state.symbols.map(r => {
+        const base = r.symbol.replace("USDT", "");
+        const pct = Number(r.priceChangePercent);
+        const cls = pct >= 0 ? "up" : "down";
+        const dec = decimalsFor(r.lastPrice);
+        return `<tr data-symbol="${r.symbol}"${r.symbol === state.symbol ? ' class="active"' : ""}>
+          <td class="sym"><span class="base">${base}</span><span class="quote">/USDT</span></td>
+          <td class="num">${fmtPrice(r.lastPrice, dec)}</td>
+          <td class="num ${cls}">${fmtPct(pct)}</td>
+          <td class="num">${fmtVolBig(r.quoteVolume)} USDT</td>
+        </tr>`;
+      }).join("");
     }
 
     // ---------- timeframe buttons ----------
@@ -508,6 +579,14 @@
     function bindEvents() {
       $("#symbol").addEventListener("change", e => {
         state.symbol = e.target.value;
+        runAction(loadAll);
+      });
+      $("#pairs-tbody").addEventListener("click", e => {
+        const tr = e.target.closest("tr[data-symbol]");
+        if (!tr) return;
+        state.symbol = tr.dataset.symbol;
+        renderPicker();
+        renderPairs();
         runAction(loadAll);
       });
       $("#timeframes").addEventListener("click", e => {

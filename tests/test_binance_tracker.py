@@ -49,6 +49,11 @@ def test_build_produces_index_for_binance_tracker():
     # Polling logic present.
     assert "startPolling" in html and "stopPolling" in html
 
+    # Markets table below the chart with click-to-switch.
+    assert 'id="pairs-tbody"' in html
+    assert "renderPairs" in html
+    assert "Markets · USDT" in html
+
 
 def test_routing_manifest_includes_binance_tracker_with_no_key():
     cases = build.discover_cases()
