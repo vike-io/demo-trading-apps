@@ -1,0 +1,11 @@
+{
+  "slug": "bybit-tracker",
+  "name": "Bybit Tracker",
+  "tagline": "Perpetuals: funding rate, mark price, open interest, liquidations. Planned.",
+  "tag": "Coming soon",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "Bybit Tracker"
+  },
+  "upstream_base": "https://api.bybit.com/v5"
+}

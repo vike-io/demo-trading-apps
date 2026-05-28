@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{brand_name}} — Coming soon</title>
+  <style>
+    :root {
+      --bg: #0d1421; --panel: #171b26; --border: #222531;
+      --text: #e9edf3; --mute: #8a93a6; --accent: #5c7cfa;
+    }
+    :root[data-theme="light"] {
+      --bg: #f8fafc; --panel: #ffffff; --border: #e2e8f0;
+      --text: #0f172a; --mute: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    header.top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    header.top .brand-link {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text); text-decoration: none; font-weight: 700; font-size: 16px;
+    }
+    header.top .brand-link::before { content: "←"; color: var(--mute); }
+    main {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 40px 24px;
+    }
+    .card {
+      max-width: 560px; text-align: center;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; padding: 56px 40px;
+    }
+    .card .badge {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--accent);
+      background: rgba(92,124,250,0.12); padding: 4px 10px; border-radius: 5px;
+      margin-bottom: 16px;
+    }
+    .card h1 { margin: 0 0 8px; font-size: 28px; }
+    .card p { margin: 0 0 24px; color: var(--mute); font-size: 14px; }
+    .card .source {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text); text-decoration: none;
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 13px;
+    }
+    .card .source:hover { border-color: var(--accent); color: var(--accent); }
+    .card .source svg { width: 14px; height: 14px; fill: currentColor; }
+  </style>
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem('cg-theme') || 'dark';
+  </script>
+</head>
+<body>
+  <header class="top">
+    <a class="brand-link" href="../">demo-trading-apps</a>
+  </header>
+  <main>
+    <div class="card">
+      <span class="badge">Coming soon</span>
+      <h1>{{brand_name}}</h1>
+      <p>This case isn't built yet. The folder is reserved and the manifest is wired up — once the implementation lands it'll appear here automatically on the next deploy.</p>
+      <a class="source" href="https://github.com/vike-io/demo-trading-apps/tree/main/{{slug}}" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2 .37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Source folder
+      </a>
+    </div>
+  </main>
+</body>
+</html>

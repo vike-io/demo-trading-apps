@@ -86,6 +86,11 @@ def build_landing(cases: list[dict]) -> None:
     if not tpl.exists():
         print("  (no landing template; skipping)")
         return
+    def _sort_key(c: dict):
+        tag = (c.get("tag") or "").lower()
+        is_planned = "coming" in tag or "planned" in tag
+        return (is_planned, c["slug"])
+
     cards = [
         {
             "slug": c["slug"],
@@ -93,7 +98,7 @@ def build_landing(cases: list[dict]) -> None:
             "tagline": c.get("tagline", ""),
             "tag": c.get("tag", ""),
         }
-        for c in cases
+        for c in sorted(cases, key=_sort_key)
     ]
     html = render_template(tpl, cards_json=json.dumps(cards))
     DIST.mkdir(exist_ok=True)

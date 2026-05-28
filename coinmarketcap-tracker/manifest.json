@@ -1,0 +1,11 @@
+{
+  "slug": "coinmarketcap-tracker",
+  "name": "CoinMarketCap Tracker",
+  "tagline": "Market cap leaderboard with prices, dominance, charts. Planned.",
+  "tag": "Coming soon",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "CoinMarketCap Tracker"
+  },
+  "upstream_base": "https://pro-api.coinmarketcap.com/v1"
+}

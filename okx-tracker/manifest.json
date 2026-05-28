@@ -1,0 +1,11 @@
+{
+  "slug": "okx-tracker",
+  "name": "OKX Tracker",
+  "tagline": "Spot + perpetuals + options in one tabbed view. Planned.",
+  "tag": "Coming soon",
+  "pages": ["index"],
+  "config": {
+    "brand_name": "OKX Tracker"
+  },
+  "upstream_base": "https://www.okx.com/api/v5"
+}
